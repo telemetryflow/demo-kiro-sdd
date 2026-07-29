@@ -76,7 +76,7 @@ func Init() error {
 		return err
 	}
 
-	log.Println("TelemetryFlow SDK v1.2.0 initialized successfully (TFO v2 API enabled)")
+	log.Println("TelemetryFlow SDK v1.4.4 initialized successfully (TFO v2 API enabled)")
 	return nil
 }
 
@@ -112,7 +112,7 @@ func InitWithV2Only() error {
 		return err
 	}
 
-	log.Println("TelemetryFlow SDK v1.2.0 initialized in v2-only mode")
+	log.Println("TelemetryFlow SDK v1.4.4 initialized in v2-only mode")
 	return nil
 }
 

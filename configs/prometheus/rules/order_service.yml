@@ -1,0 +1,25 @@
+# =============================================================================
+# Prometheus Recording & Alerting Rules — Order Service Observability
+# =============================================================================
+# Requirements: R1.1, R1.2, R2.1, R2.2, R2.3, R2.4, R2.5, R6
+# =============================================================================
+
+groups:
+  - name: order_service_latency
+    interval: 15s
+    rules:
+      # Recording rule: P95 latency per endpoint (milliseconds)
+      # Computes the 95th percentile of request duration from the span_metrics histogram
+      # Output labels: http_method, http_route (le is excluded by the aggregation)
+      - record: order_service:http_request_duration_p95:5m
+        expr: histogram_quantile(0.95, sum(rate(traces_span_metrics_duration_milliseconds_bucket[5m])) by (le, http_method, http_route))
+
+      # Alerting rule: fires when P95 latency exceeds 500ms for 2 minutes
+      - alert: HighP95Latency
+        expr: order_service:http_request_duration_p95:5m > 500
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'P95 latency {{ $value | printf "%.0f" }}ms on {{ $labels.http_method }} {{ $labels.http_route }}'
+          requirement_id: "R2"

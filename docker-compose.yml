@@ -75,7 +75,7 @@ services:
     profiles: ["db", "app", "all"]
     platform: linux/amd64
     image: postgres:${POSTGRES_VERSION:-16-alpine}
-    container_name: ${CONTAINER_POSTGRES:-order_service_postgres}
+    container_name: ${CONTAINER_POSTGRES:-tfo_demo_postgres}
     restart: unless-stopped
     ports:
       - "${PORT_POSTGRES:-5432}:5432"
@@ -106,7 +106,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ${CONTAINER_API:-order_service_api}
+    container_name: ${CONTAINER_API:-tfo_demo_api}
     restart: unless-stopped
     ports:
       - "${PORT:-8080}:8080"
@@ -144,7 +144,7 @@ services:
       - TELEMETRYFLOW_API_KEY_SECRET=${TELEMETRYFLOW_API_KEY_SECRET}
       - TELEMETRYFLOW_ENDPOINT=tfo-collector:4317
       - TELEMETRYFLOW_SERVICE_NAME=${TELEMETRYFLOW_SERVICE_NAME:-Order-Service}
-      - TELEMETRYFLOW_SERVICE_VERSION=${TELEMETRYFLOW_SERVICE_VERSION:-1.4.0}
+      - TELEMETRYFLOW_SERVICE_VERSION=${TELEMETRYFLOW_SERVICE_VERSION:-1.4.4}
       - TELEMETRYFLOW_INSECURE=${TELEMETRYFLOW_INSECURE:-true}
 
       # Logging
@@ -199,7 +199,7 @@ services:
     # image: otel/opentelemetry-collector-contrib:${OTEL_VERSION:-0.142.0}
     # command: ["--config=/etc/otelcol-contrib/config.yaml"]
     # =============================================================================
-    container_name: ${CONTAINER_OTEL:-order_service_tfo_collector}
+    container_name: ${CONTAINER_OTEL:-tfo_demo_tfo_collector}
     restart: unless-stopped
     environment:
       # Backend endpoint for tfo exporter (host.docker.internal → host)
@@ -208,7 +208,7 @@ services:
       - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID}
       - TELEMETRYFLOW_API_KEY_SECRET=${TELEMETRYFLOW_API_KEY_SECRET}
       # Collector identity
-      - TELEMETRYFLOW_COLLECTOR_ID=${CONTAINER_OTEL:-order_service_tfo_collector}
+      - TELEMETRYFLOW_COLLECTOR_ID=${CONTAINER_OTEL:-tfo_demo_tfo_collector}
       - TELEMETRYFLOW_ENVIRONMENT=${TELEMETRYFLOW_ENVIRONMENT:-development}
     volumes:
       # TelemetryFlow Collector config (Custom TFO format)
@@ -242,7 +242,7 @@ services:
     profiles: ["monitoring", "all"]
     platform: linux/amd64
     image: prom/prometheus:${PROMETHEUS_VERSION:-v3.4.0}
-    container_name: ${CONTAINER_PROMETHEUS:-order_service_prometheus}
+    container_name: ${CONTAINER_PROMETHEUS:-tfo_demo_prometheus}
     restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -255,12 +255,38 @@ services:
       - "${PORT_PROMETHEUS:-9090}:9090"
     volumes:
       - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./configs/prometheus/rules/:/etc/prometheus/rules/:ro
       - vol_prometheus_data:/prometheus
     networks:
       order_service_net:
         ipv4_address: ${CONTAINER_IP_PROMETHEUS:-172.152.152.50}
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  #----------------------------------------------------------------------------------------------
+  # ALERTMANAGER - Alert Notification Routing
+  #----------------------------------------------------------------------------------------------
+  alertmanager:
+    profiles: ["monitoring", "all"]
+    image: prom/alertmanager:v0.28.1
+    container_name: ${CONTAINER_ALERTMANAGER:-tfo_demo_alertmanager}
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--cluster.advertise-address=${CONTAINER_IP_ALERTMANAGER:-172.152.152.55}:9094'
+    ports:
+      - "${PORT_ALERTMANAGER:-9093}:9093"
+    volumes:
+      - ./configs/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks:
+      order_service_net:
+        ipv4_address: ${CONTAINER_IP_ALERTMANAGER:-172.152.152.55}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9093/-/healthy"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -277,7 +303,7 @@ services:
     profiles: ["platform"]
     platform: linux/amd64
     image: postgres:${POSTGRES_VERSION:-16-alpine}
-    container_name: ${CONTAINER_TFO_POSTGRES:-order_service_tfo_platform_postgres}
+    container_name: ${CONTAINER_TFO_POSTGRES:-tfo_demo_tfo_platform_postgres}
     restart: unless-stopped
     ports:
       - "${PORT_TFO_PLATFORM_POSTGRES:-5433}:5432"
@@ -306,7 +332,7 @@ services:
     profiles: ["platform"]
     platform: linux/amd64
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.7}
-    container_name: ${CONTAINER_TFO_CLICKHOUSE:-order_service_tfo_platform_clickhouse}
+    container_name: ${CONTAINER_TFO_CLICKHOUSE:-tfo_demo_tfo_platform_clickhouse}
     restart: unless-stopped
     ports:
       - "${PORT_CLICKHOUSE_HTTP:-8123}:8123"    # HTTP
@@ -339,7 +365,7 @@ services:
     profiles: ["platform"]
     platform: linux/amd64
     image: redis:${REDIS_VERSION:-7-alpine}
-    container_name: ${CONTAINER_TFO_REDIS:-order_service_tfo_platform_redis}
+    container_name: ${CONTAINER_TFO_REDIS:-tfo_demo_tfo_platform_redis}
     restart: unless-stopped
     ports:
       - "${PORT_TFO_PLATFORM_REDIS:-6380}:6379"
@@ -369,7 +395,7 @@ services:
     profiles: ["platform"]
     platform: linux/amd64
     image: nats:${NATS_VERSION:-2-alpine}
-    container_name: ${CONTAINER_TFO_NATS:-order_service_tfo_platform_nats}
+    container_name: ${CONTAINER_TFO_NATS:-tfo_demo_tfo_platform_nats}
     restart: unless-stopped
     ports:
       - "${PORT_NATS_CLIENT:-4222}:4222"   # Client connections
@@ -395,8 +421,8 @@ services:
   tfo-backend:
     profiles: ["platform"]
     platform: linux/amd64
-    image: telemetryflow/telemetryflow-platform:${TFO_PLATFORM_VERSION:-1.4.0}
-    container_name: ${CONTAINER_TFO_BACKEND:-order_service_tfo_backend}
+    image: telemetryflow/telemetryflow-platform:${TFO_PLATFORM_VERSION:-1.4.4}
+    container_name: ${CONTAINER_TFO_BACKEND:-tfo_demo_tfo_backend}
     restart: unless-stopped
     ports:
       - "${PORT_BACKEND:-3000}:3000"
@@ -481,8 +507,8 @@ services:
   tfo-viz:
     profiles: ["platform"]
     platform: linux/amd64
-    image: telemetryflow/telemetryflow-viz:${TFO_PLATFORM_VERSION:-1.4.0}
-    container_name: ${CONTAINER_TFO_VIZ:-order_service_tfo_viz}
+    image: telemetryflow/telemetryflow-viz:${TFO_PLATFORM_VERSION:-1.4.4}
+    container_name: ${CONTAINER_TFO_VIZ:-tfo_demo_tfo_viz}
     restart: unless-stopped
     ports:
       - "${PORT_FRONTEND:-8080}:80"

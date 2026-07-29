@@ -24,6 +24,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/telemetryflow/order-service/internal/infrastructure/config"
+	"github.com/telemetryflow/order-service/pkg/validator"
 	"gorm.io/gorm"
 )
 
@@ -39,6 +40,7 @@ func NewServer(cfg *config.Config, db *gorm.DB) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
+	e.Validator = validator.NewEchoValidator()
 
 	server := &Server{
 		echo:   e,

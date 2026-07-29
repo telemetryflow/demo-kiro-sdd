@@ -6,12 +6,12 @@
 # Build configuration
 PRODUCT_NAME := Order-Service
 BINARY_NAME := Order-Service
-VERSION ?= 1.4.0
+VERSION ?= 1.4.4
 TFO_COLLECTOR_VERSION := 1.3.0
 TFO_AGENT_VERSION := 1.3.0
-TFO_SDK_VERSION := 1.2.0
-OTEL_VERSION := 0.142.0
-OTEL_GO_SDK_VERSION := 1.43.0
+TFO_SDK_VERSION := 1.3.0
+OTEL_VERSION := 0.147.0
+OTEL_GO_SDK_VERSION := 1.47.0
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')

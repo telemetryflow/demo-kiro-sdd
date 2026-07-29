@@ -60,19 +60,19 @@ func (s *Server) setupRoutes() {
 	swaggerHandler := handler.NewSwaggerHandler("Order Service API")
 	swaggerHandler.RegisterRoutes(e)
 
-	// API v1 routes
-	v1 := e.Group("/api/v1")
+	// API v1 routes — public (no auth required)
+	v1Public := e.Group("/api/v1")
 	{
-		// Public routes
-		// v1.POST("/auth/login", authHandler.Login)
-		// v1.POST("/auth/register", authHandler.Register)
+		authHandler := handler.NewAuthHandler(s.config.JWT)
+		authHandler.RegisterRoutes(v1Public)
+	}
 
-		// Protected routes
-		protected := v1.Group("")
-		protected.Use(middleware.Auth(s.config.JWT))
-		{
-			// Add protected routes here
-		}
+	// API v1 routes — protected (JWT required)
+	v1Protected := e.Group("/api/v1")
+	v1Protected.Use(middleware.Auth(s.config.JWT))
+	{
+		// Add protected routes here
+		_ = v1Protected
 	}
 
 }

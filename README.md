@@ -7,7 +7,7 @@
     <img src="https://github.com/telemetryflow/.github/raw/main/docs/assets/tfo-logo-sdk-light.svg" alt="TelemetryFlow Logo" width="80%">
   </picture>
 
-[![Version](https://img.shields.io/badge/Version-1.2.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.4.4-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
@@ -26,37 +26,76 @@
 This project follows **Domain-Driven Design (DDD)** with **CQRS (Command Query Responsibility Segregation)** pattern.
 
 ```
-Order-Service/
+order-service/
 ├── cmd/
-│   └── api/                    # Application entry point
+│   └── api/
+│       └── main.go               # Application entry point
 ├── internal/
-│   ├── domain/                 # Domain Layer (Core Business Logic)
-│   │   ├── entity/             # Domain entities
-│   │   ├── repository/         # Repository interfaces
-│   │   └── valueobject/        # Value objects
-│   ├── application/            # Application Layer (Use Cases)
-│   │   ├── command/            # Commands (write operations)
-│   │   ├── query/              # Queries (read operations)
-│   │   ├── handler/            # Command & Query handlers
-│   │   └── dto/                # Data Transfer Objects
-│   └── infrastructure/         # Infrastructure Layer
-│       ├── persistence/        # Database implementations
-│       ├── http/               # HTTP server & handlers
-│       └── config/             # Configuration
-├── pkg/                        # Shared packages
-├── telemetry/                  # TelemetryFlow integration
-├── config/                     # Service configurations
-│   └── otel/                   # OpenTelemetry Collector config
-├── docs/                       # Documentation
-│   ├── api/                    # OpenAPI/Swagger specs
-│   ├── diagrams/               # ERD, DFD diagrams
-│   └── postman/                # Postman collections
-├── migrations/                 # Database migrations
-├── configs/                    # Application configuration files
-└── tests/                      # Tests
-    ├── unit/
-    ├── integration/
-    └── e2e/
+│   ├── domain/                   # Domain Layer
+│   │   ├── domain.go             # Domain types and interfaces
+│   │   ├── entity/               # Domain entities (Order, OrderItem)
+│   │   └── repository/           # Repository interfaces (contracts)
+│   ├── application/              # Application Layer (CQRS)
+│   │   ├── command/              # Write operations (Create, Update, Delete)
+│   │   ├── query/                # Read operations (Get, List)
+│   │   ├── handler/              # Command & Query handlers
+│   │   └── dto/                  # Data Transfer Objects
+│   └── infrastructure/           # Infrastructure Layer
+│       ├── config/               # Configuration loading (env, YAML)
+│       ├── http/                 # HTTP transport
+│       │   ├── server.go         # Echo server setup
+│       │   ├── router.go         # Route registration
+│       │   ├── handler/          # HTTP handlers (auth, order, swagger, health)
+│       │   └── middleware/       # Middleware (JWT auth, CORS, rate limit, logger)
+│       └── persistence/          # Database implementations (GORM/PostgreSQL)
+├── pkg/                          # Shared packages
+│   ├── logger/                   # Structured logging
+│   ├── response/                 # HTTP response helpers
+│   ├── safefile/                 # Safe file operations
+│   └── validator/                # Request validation (Echo-compatible)
+├── telemetry/                    # TelemetryFlow SDK integration
+│   ├── init.go                   # SDK initialization and shutdown
+│   ├── logs/                     # Log signal configuration
+│   ├── metrics/                  # Metric signal configuration
+│   └── traces/                   # Trace signal configuration
+├── configs/                      # Service configurations
+│   ├── config.yaml               # Application defaults
+│   ├── otel/                     # TFO Collector pipeline config
+│   ├── prometheus/               # Prometheus scrape config + alerting rules
+│   ├── alertmanager/             # Alertmanager routing config
+│   ├── grafana/                  # Dashboard JSON models
+│   └── jaeger/                   # Sampling strategies
+├── docs/                         # Documentation
+│   ├── api/                      # OpenAPI spec (openapi.yaml, swagger.json)
+│   ├── diagrams/                 # ERD, DFD (Mermaid)
+│   ├── postman/                  # Postman collection + environment
+│   ├── githooks/                 # Git hook scripts
+│   └── wiki/                     # Wiki pages (Getting Started, Architecture, etc.)
+├── tests/                        # Tests (external test packages)
+│   ├── unit/                     # Unit tests (no I/O)
+│   │   ├── application/          # Command/query handler tests
+│   │   ├── domain/               # Entity and domain logic tests
+│   │   ├── infrastructure/       # Middleware, config, HTTP handler tests
+│   │   ├── observability/        # Prometheus rule validation tests
+│   │   ├── pkg/                  # Validator, response helper tests
+│   │   └── telemetry/            # SDK initialization tests
+│   ├── integration/              # Integration tests (require Docker)
+│   │   ├── observability/        # Live Prometheus/Alertmanager queries
+│   │   ├── api_test.go           # API endpoint integration tests
+│   │   └── order_api_test.go     # Order CRUD integration tests
+│   ├── e2e/                      # End-to-end tests
+│   ├── mocks/                    # Shared mock implementations
+│   └── fixtures/                 # Test data fixtures
+├── migrations/                   # Database migration files
+├── scripts/                      # Utility scripts (hooks, run, test)
+├── .github/                      # GitHub Actions (CI, Docker, Release)
+├── Dockerfile                    # Multi-stage Docker build
+├── docker-compose.yml            # Profile-based orchestration (db, app, monitoring, platform, all)
+├── docker-compose.prometheus.yml # Prometheus-only compose override
+├── Makefile                      # Build, test, lint, migrate automation
+├── .golangci.yml                 # Linter configuration
+├── go.mod                        # Go module definition
+└── go.sum                        # Dependency checksums
 ```
 
 ## Quick Start
@@ -72,6 +111,7 @@ Order-Service/
 1. Clone the repository
 
 2. Copy environment file:
+
    ```bash
    cp .env.example .env
    ```
@@ -79,11 +119,13 @@ Order-Service/
 3. Edit `.env` with your configuration
 
 4. Install dependencies:
+
    ```bash
    make deps
    ```
 
 5. Run migrations:
+
    ```bash
    make migrate-up
    ```
@@ -98,33 +140,33 @@ Order-Service/
 The easiest way to run the service with all dependencies:
 
 ```bash
-# Start all services (PostgreSQL + API + OpenTelemetry Collector)
-make docker-compose-up
+# Start all services (PostgreSQL + API + TFO Collector + Prometheus + Alertmanager)
+docker compose --profile all up -d
 
 # Or use profiles for selective startup
-docker compose --profile all up -d        # Start everything
 docker compose --profile db up -d         # Start only PostgreSQL
-docker compose --profile app up -d        # Start only API
-docker compose --profile monitoring up -d # Start only OTEL Collector
+docker compose --profile app up -d        # Start API + PostgreSQL + Collector
+docker compose --profile monitoring up -d # Start Collector + Prometheus + Alertmanager
+
+# Rebuild after code changes
+docker compose --profile app up -d --build api
 
 # Stop all services
-make docker-compose-down
+docker compose --profile all down
 
 # View logs
-docker logs -f order_service_api
-docker logs -f order_service_postgres
-docker logs -f order_service_otel
+docker compose --profile app logs -f api
 ```
 
 ### Profiles
 
-| Profile | Services |
-|---------|----------|
-| `db` | PostgreSQL |
-| `app` | API (Order Service) |
-| `monitoring` | TFO-Collector, Prometheus |
-| `platform` | TFO-Backend, TFO-Viz, PostgreSQL, ClickHouse, Redis, NATS |
-| `all` | All services |
+| Profile      | Services                                                  |
+| ------------ | --------------------------------------------------------- |
+| `db`         | PostgreSQL                                                |
+| `app`        | API (Order Service)                                       |
+| `monitoring` | TFO-Collector, Prometheus                                 |
+| `platform`   | TFO-Backend, TFO-Viz, PostgreSQL, ClickHouse, Redis, NATS |
+| `all`        | All services                                              |
 
 ```bash
 # Start platform services for end-to-end observability
@@ -139,25 +181,25 @@ docker compose --profile all up -d
 
 ### Services
 
-| Service | Container | Port | Description |
-|---------|-----------|------|-------------|
-| PostgreSQL | `TFO-SDK-PostgreSQL` | 5432 | Order database |
-| API | `TFO-SDK-Order-Service` | 8080 | RESTful API |
-| TFO-Collector | `TFO-SDK-OTEL` | 4317, 4318, 8889, 13133, 55679, 1777 | TelemetryFlow Collector (v1.2.1) |
-| Prometheus | `TFO-SDK-Prometheus` | 9090 | Metrics collection |
-| TFO-Backend | `TFO-Platform-Backend` | 8081 | TelemetryFlow Platform API (platform profile) |
-| TFO-Viz | `TFO-Platform-Viz` | 3000 | TelemetryFlow Visualization UI (platform profile) |
+| Service       | Container               | Port                                 | Description                                       |
+| ------------- | ----------------------- | ------------------------------------ | ------------------------------------------------- |
+| PostgreSQL    | `TFO-SDK-PostgreSQL`    | 5432                                 | Order database                                    |
+| API           | `TFO-SDK-Order-Service` | 8080                                 | RESTful API                                       |
+| TFO-Collector | `TFO-SDK-OTEL`          | 4317, 4318, 8889, 13133, 55679, 1777 | TelemetryFlow Collector (v1.2.1)                  |
+| Prometheus    | `TFO-SDK-Prometheus`    | 9090                                 | Metrics collection                                |
+| TFO-Backend   | `TFO-Platform-Backend`  | 8081                                 | TelemetryFlow Platform API (platform profile)     |
+| TFO-Viz       | `TFO-Platform-Viz`      | 3000                                 | TelemetryFlow Visualization UI (platform profile) |
 
 ### OTEL Collector Ports
 
-| Port  | Protocol | Description           |
-| ----- | -------- | --------------------- |
-| 4317  | gRPC     | OTLP gRPC (v1 & v2)   |
-| 4318  | HTTP     | OTLP HTTP (v1 & v2)   |
-| 8889  | HTTP     | Prometheus metrics    |
-| 13133 | HTTP     | Health check          |
-| 55679 | HTTP     | zPages (debugging)    |
-| 1777  | HTTP     | pprof (profiling)     |
+| Port  | Protocol | Description         |
+| ----- | -------- | ------------------- |
+| 4317  | gRPC     | OTLP gRPC (v1 & v2) |
+| 4318  | HTTP     | OTLP HTTP (v1 & v2) |
+| 8889  | HTTP     | Prometheus metrics  |
+| 13133 | HTTP     | Health check        |
+| 55679 | HTTP     | zPages (debugging)  |
+| 1777  | HTTP     | pprof (profiling)   |
 
 ### OTLP Endpoints (Dual Ingestion)
 
@@ -185,10 +227,10 @@ POST http://localhost:4318/v1/logs
 
 All services run on a custom Docker network `order_service_net` with subnet `172.152.0.0/16`:
 
-| Service | IP Address |
-|---------|------------|
-| API | 172.152.152.10 |
-| PostgreSQL | 172.152.152.20 |
+| Service        | IP Address     |
+| -------------- | -------------- |
+| API            | 172.152.152.10 |
+| PostgreSQL     | 172.152.152.20 |
 | OTEL Collector | 172.152.152.30 |
 
 ## Development
@@ -218,6 +260,7 @@ telemetryflow-restapi entity -n Product -f 'name:string,price:float64,stock:int'
 ```
 
 This generates:
+
 - Domain entity
 - Repository interface & implementation
 - CQRS commands & queries
@@ -226,29 +269,30 @@ This generates:
 
 ## API Documentation
 
-| Documentation | Location |
-|--------------|----------|
-| OpenAPI Spec | `docs/api/openapi.yaml` |
-| Swagger JSON | `docs/api/swagger.json` |
-| ERD Diagram | `docs/diagrams/ERD.md` |
-| DFD Diagram | `docs/diagrams/DFD.md` |
+| Documentation      | Location                       |
+| ------------------ | ------------------------------ |
+| OpenAPI Spec       | `docs/api/openapi.yaml`        |
+| Swagger JSON       | `docs/api/swagger.json`        |
+| ERD Diagram        | `docs/diagrams/ERD.md`         |
+| DFD Diagram        | `docs/diagrams/DFD.md`         |
 | Postman Collection | `docs/postman/collection.json` |
 
 ### API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/api/v1/orders` | List all orders |
-| POST | `/api/v1/orders` | Create order |
-| GET | `/api/v1/orders/:id` | Get order by ID |
-| PUT | `/api/v1/orders/:id` | Update order |
-| DELETE | `/api/v1/orders/:id` | Delete order |
-| GET | `/api/v1/orderitems` | List all order items |
-| POST | `/api/v1/orderitems` | Create order item |
-| GET | `/api/v1/orderitems/:id` | Get order item by ID |
-| PUT | `/api/v1/orderitems/:id` | Update order item |
-| DELETE | `/api/v1/orderitems/:id` | Delete order item |
+| Method | Endpoint                 | Description                        |
+| ------ | ------------------------ | ---------------------------------- |
+| GET    | `/health`                | Health check                       |
+| POST   | `/api/v1/auth/token`     | Generate JWT access token (public) |
+| GET    | `/api/v1/orders`         | List all orders                    |
+| POST   | `/api/v1/orders`         | Create order                       |
+| GET    | `/api/v1/orders/:id`     | Get order by ID                    |
+| PUT    | `/api/v1/orders/:id`     | Update order                       |
+| DELETE | `/api/v1/orders/:id`     | Delete order                       |
+| GET    | `/api/v1/orderitems`     | List all order items               |
+| POST   | `/api/v1/orderitems`     | Create order item                  |
+| GET    | `/api/v1/orderitems/:id` | Get order item by ID               |
+| PUT    | `/api/v1/orderitems/:id` | Update order item                  |
+| DELETE | `/api/v1/orderitems/:id` | Delete order item                  |
 
 ## Configuration
 
@@ -256,59 +300,59 @@ Configuration is loaded from environment variables and `.env` file.
 
 ### Application Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SERVER_PORT` | HTTP server port | `8080` |
-| `SERVER_READ_TIMEOUT` | Read timeout | `15s` |
-| `SERVER_WRITE_TIMEOUT` | Write timeout | `15s` |
-| `ENV` | Environment (development/production) | `development` |
+| Variable               | Description                          | Default       |
+| ---------------------- | ------------------------------------ | ------------- |
+| `SERVER_PORT`          | HTTP server port                     | `8080`        |
+| `SERVER_READ_TIMEOUT`  | Read timeout                         | `15s`         |
+| `SERVER_WRITE_TIMEOUT` | Write timeout                        | `15s`         |
+| `ENV`                  | Environment (development/production) | `development` |
 
 ### Database Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DB_DRIVER` | Database driver | `postgres` |
-| `DB_HOST` | Database host | `localhost` |
-| `DB_PORT` | Database port | `5432` |
-| `DB_NAME` | Database name | `orders` |
-| `DB_USER` | Database user | `postgres` |
-| `DB_PASSWORD` | Database password | - |
-| `DB_SSL_MODE` | SSL mode | `disable` |
-| `DB_MAX_OPEN_CONNS` | Max open connections | `25` |
-| `DB_MAX_IDLE_CONNS` | Max idle connections | `5` |
-| `DB_CONN_MAX_LIFETIME` | Connection max lifetime | `5m` |
+| Variable               | Description             | Default     |
+| ---------------------- | ----------------------- | ----------- |
+| `DB_DRIVER`            | Database driver         | `postgres`  |
+| `DB_HOST`              | Database host           | `localhost` |
+| `DB_PORT`              | Database port           | `5432`      |
+| `DB_NAME`              | Database name           | `orders`    |
+| `DB_USER`              | Database user           | `postgres`  |
+| `DB_PASSWORD`          | Database password       | -           |
+| `DB_SSL_MODE`          | SSL mode                | `disable`   |
+| `DB_MAX_OPEN_CONNS`    | Max open connections    | `25`        |
+| `DB_MAX_IDLE_CONNS`    | Max idle connections    | `5`         |
+| `DB_CONN_MAX_LIFETIME` | Connection max lifetime | `5m`        |
 
 ### JWT Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `JWT_SECRET` | JWT signing secret | - |
-| `JWT_REFRESH_SECRET` | JWT refresh secret | - |
-| `JWT_EXPIRATION` | Token expiration | `24h` |
-| `JWT_REFRESH_EXPIRATION` | Refresh token expiration | `168h` |
+| Variable                 | Description              | Default |
+| ------------------------ | ------------------------ | ------- |
+| `JWT_SECRET`             | JWT signing secret       | -       |
+| `JWT_REFRESH_SECRET`     | JWT refresh secret       | -       |
+| `JWT_EXPIRATION`         | Token expiration         | `24h`   |
+| `JWT_REFRESH_EXPIRATION` | Refresh token expiration | `168h`  |
 
 ### TelemetryFlow / OpenTelemetry Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TELEMETRYFLOW_API_KEY_ID` | TelemetryFlow API Key ID | - |
-| `TELEMETRYFLOW_API_KEY_SECRET` | TelemetryFlow API Key Secret | - |
-| `TELEMETRYFLOW_ENDPOINT` | OTLP endpoint | `localhost:4317` |
-| `TELEMETRYFLOW_SERVICE_NAME` | Service name | `Order-Service` |
-| `TELEMETRYFLOW_SERVICE_VERSION` | Service version | `1.2.0` |
+| Variable                        | Description                  | Default          |
+| ------------------------------- | ---------------------------- | ---------------- |
+| `TELEMETRYFLOW_API_KEY_ID`      | TelemetryFlow API Key ID     | -                |
+| `TELEMETRYFLOW_API_KEY_SECRET`  | TelemetryFlow API Key Secret | -                |
+| `TELEMETRYFLOW_ENDPOINT`        | OTLP endpoint                | `localhost:4317` |
+| `TELEMETRYFLOW_SERVICE_NAME`    | Service name                 | `Order-Service`  |
+| `TELEMETRYFLOW_SERVICE_VERSION` | Service version              | `1.4.4`          |
 
 ### Docker Compose Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `POSTGRES_VERSION` | PostgreSQL image version | `16-alpine` |
-| `OTEL_VERSION` | OTEL Collector image version | `latest` |
-| `CONTAINER_POSTGRES` | PostgreSQL container name | `order_service_postgres` |
-| `CONTAINER_API` | API container name | `order_service_api` |
-| `CONTAINER_OTEL` | OTEL container name | `order_service_otel` |
-| `PORT_OTEL_GRPC` | OTEL gRPC port | `4317` |
-| `PORT_OTEL_HTTP` | OTEL HTTP port | `4318` |
-| `PORT_OTEL_METRICS` | OTEL metrics port | `8889` |
+| Variable             | Description                  | Default                  |
+| -------------------- | ---------------------------- | ------------------------ |
+| `POSTGRES_VERSION`   | PostgreSQL image version     | `16-alpine`              |
+| `OTEL_VERSION`       | OTEL Collector image version | `latest`                 |
+| `CONTAINER_POSTGRES` | PostgreSQL container name    | `order_service_postgres` |
+| `CONTAINER_API`      | API container name           | `order_service_api`      |
+| `CONTAINER_OTEL`     | OTEL container name          | `order_service_otel`     |
+| `PORT_OTEL_GRPC`     | OTEL gRPC port               | `4317`                   |
+| `PORT_OTEL_HTTP`     | OTEL HTTP port               | `4318`                   |
+| `PORT_OTEL_METRICS`  | OTEL metrics port            | `8889`                   |
 
 ## Testing
 
@@ -345,11 +389,13 @@ make docker-compose-down
 ## Observability
 
 The service is instrumented with OpenTelemetry for:
+
 - **Traces**: Distributed tracing for request flows
 - **Metrics**: Application and runtime metrics
 - **Logs**: Structured logging
 
 The OpenTelemetry Collector receives telemetry data and exports to:
+
 - TelemetryFlow Platform (via `platform` profile - TFO-Backend + TFO-Viz)
 - Prometheus (metrics)
 

@@ -20,21 +20,15 @@
       "enabled": true
     },
     {
-      "key": "refreshToken",
-      "value": "",
-      "type": "secret",
-      "enabled": true
-    },
-    {
-      "key": "testUserEmail",
-      "value": "test@example.com",
+      "key": "tokenEmail",
+      "value": "dev@example.com",
       "type": "default",
       "enabled": true
     },
     {
-      "key": "testUserPassword",
-      "value": "password123",
-      "type": "secret",
+      "key": "tokenRole",
+      "value": "admin",
+      "type": "default",
       "enabled": true
     },
     {

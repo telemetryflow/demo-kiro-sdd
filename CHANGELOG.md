@@ -7,7 +7,7 @@
     <img src="https://github.com/telemetryflow/.github/raw/main/docs/assets/tfo-logo-sdk-light.svg" alt="TelemetryFlow Logo" width="80%">
   </picture>
 
-[![Version](https://img.shields.io/badge/Version-1.2.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.4.4-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
@@ -27,6 +27,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.4.4] - 2026-07-29
+
+### Added
+
+- **Request Validator**: Registered Echo validator on server instance, enabling struct validation on all request handlers
+- **Auth Token Endpoint**: Public `POST /api/v1/auth/token` endpoint with auto-generated `user_id` (UUID) — only `email` and `role` required in request body
+
+### Fixed
+
+- **Router Middleware Bleed**: Fixed auth middleware being applied to public routes due to Echo sub-group with empty prefix. Split into independent `v1Public` and `v1Protected` groups
+- **Lint Issues**: Resolved all linter warnings (errcheck, staticcheck SA4012, ineffassign) across observability test files
+
+### Changed
+
+- **OpenAPI Spec**: Added Auth tag and `/api/v1/auth/token` endpoint with `TokenRequest`, `TokenResponse`, `TokenSuccessResponse` schemas
+- **Swagger JSON**: Synchronized with OpenAPI spec changes
+- **Postman Collection**: Replaced legacy "Login" request with "Generate Token" pointing to correct endpoint
+- **Postman Environment**: Replaced `testUserEmail`/`testUserPassword` with `tokenEmail`/`tokenRole` variables
+- **Docker Compose Docs**: Added rebuild command (`--build api`) to wiki and README
+- **Version**: Updated from 1.4.0 to 1.4.4
+
+---
 
 ## [1.2.0] - 2026-06-23
 
