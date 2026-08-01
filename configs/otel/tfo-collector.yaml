@@ -280,11 +280,32 @@ exporters:
       max_elapsed_time: 300s
     compression: gzip
 
-  # OTLP/HTTP exporter for Jaeger (v2 natively accepts OTLP on port 4318)
-  # otlphttp/jaeger:
-  #   endpoint: "http://jaeger:4318"
-  #   tls:
-  #     insecure: true
+  # Jaeger (OTLP native) - traces backend for Grafana correlation
+  # Jaeger all-in-one accepts OTLP/HTTP on port 4318 inside the compose network.
+  otlphttp/jaeger:
+    endpoint: "http://jaeger:4318"
+    tls:
+      insecure: true
+
+  # Loki (OTLP native, Loki 3.x) - logs backend for Grafana correlation.
+  # Native OTLP ingestion preserves traceId as structured metadata so Grafana can
+  # link a log line straight to the trace it belongs to. The exporter appends
+  # /v1/logs to the endpoint, producing http://loki:3100/otlp/v1/logs.
+  otlphttp/loki:
+    endpoint: "http://loki:3100/otlp"
+    tls:
+      insecure: true
+
+  # Prometheus exporter - exposes collector-derived metrics (span_metrics +
+  # service_graph with EXEMPLARS) for Prometheus to scrape on port 8889.
+  # This is the bridge that makes metrics → traces drill-down possible in Grafana.
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    send_timestamps: true
+    metric_expiration: 5m
+    resource_to_telemetry_conversion:
+      enabled: true
+    enable_open_metrics: true
 
   # Standard OTLP exporter for other backends (uncomment to enable)
   # otlp:
@@ -311,11 +332,11 @@ service:
   extensions: [health_check, zpages, pprof, tfoauth, tfoidentity]
 
   pipelines:
-    # Traces pipeline
+    # Traces pipeline - fans out to TFO Platform, Jaeger, and connectors (span_metrics/service_graph)
     traces:
       receivers: [tfootlp]
       processors: [memory_limiter, resourcedetection, resource, attributes/agent, batch]
-      exporters: [debug, tfo, span_metrics, service_graph]
+      exporters: [debug, tfo, otlphttp/jaeger, span_metrics, service_graph]
 
     # Metrics pipeline - receives ALL TFO-Agent collector metrics.
     # Covers all 16 collectors: k8s-nodes, k8s-pods, k8s-deployments, k8s-workloads,
@@ -331,21 +352,21 @@ service:
         - transform/hubble    # normalize hubble_* → hubble.*
         - attributes/agent    # tag with tfo.source=tfo-agent
         - batch
-      exporters: [debug, tfo]
+      exporters: [debug, tfo, prometheus]
 
-    # Metrics from traces (exemplars)
+    # Metrics from traces (exemplars) - exposed to Prometheus + forwarded to TFO
     metrics/span_metrics:
       receivers: [span_metrics]
       processors: [memory_limiter, resource, batch]
-      exporters: [tfo]
+      exporters: [tfo, prometheus]
 
-    # Service dependency graph metrics
+    # Service dependency graph metrics - exposed to Prometheus + forwarded to TFO
     metrics/service_graph:
       receivers: [service_graph]
       processors: [memory_limiter, resource, batch]
-      exporters: [tfo]
+      exporters: [tfo, prometheus]
 
-    # Logs pipeline - pod container logs (k8s-pod-logs) + eBPF Hubble events
+    # Logs pipeline - fans out to TFO Platform and Loki (trace correlation)
     logs:
       receivers: [tfootlp]
       processors:
@@ -354,7 +375,7 @@ service:
         - resource
         - attributes/agent
         - batch
-      exporters: [debug, tfo]
+      exporters: [debug, tfo, otlphttp/loki]
 
   # Internal telemetry configuration
   telemetry:

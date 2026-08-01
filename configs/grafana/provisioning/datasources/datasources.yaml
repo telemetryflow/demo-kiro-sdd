@@ -1,0 +1,88 @@
+# =============================================================================
+# Grafana Datasources - Order Service Observability (Metrics / Logs / Traces)
+# =============================================================================
+# Three datasources wired for cross-signal correlation:
+#   Prometheus  → metrics (span_metrics + service_graph with exemplars)
+#   Jaeger      → traces  (target of exemplar + log drill-down)
+#   Loki        → logs    (traceId structured metadata → Jaeger)
+#
+# Correlation flows:
+#   metrics --exemplar(trace_id)--> traces   (Prometheus exemplar data links)
+#   traces  --traceId-------------> logs     (Jaeger → Loki correlation)
+#   logs    --traceId-------------> traces   (Loki internal data link)
+# =============================================================================
+
+apiVersion: 1
+
+datasources:
+  # ---------------------------------------------------------------------------
+  # PROMETHEUS - Metrics + exemplars (metrics → traces)
+  # ---------------------------------------------------------------------------
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s
+      # Exemplars expose trace_id; route them to the Jaeger datasource
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: jaeger
+        - name: traceID
+          datasourceUid: jaeger
+
+  # ---------------------------------------------------------------------------
+  # JAEGER - Traces (hub for metrics ↔ logs correlation)
+  # ---------------------------------------------------------------------------
+  - name: Jaeger
+    uid: jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: false
+    jsonData:
+      tracesToMetrics:
+        datasourceUid: prometheus
+        tags:
+          - name: service.name
+            metricsTag: service_name
+        queries:
+          - name: Request rate
+            query: 'sum(rate(traces_span_metrics_calls_total{service_name="$${__field.labels.service_name}"}[5m]))'
+            step: 15s
+          - name: Error rate
+            query: 'sum(rate(traces_span_metrics_calls_total{service_name="$${__field.labels.service_name}",status_code="STATUS_CODE_ERROR"}[5m]))'
+            step: 15s
+      # Trace → Logs correlation: jump from a trace into Loki filtered by traceId
+      tracesToLogsV2:
+        datasourceUid: loki
+        customQuery: true
+        query: '{$${__tags.service.name}: "$${__service.name}"} | traceId = "$${__trace.traceId}"'
+        tags:
+          - key: "service.name"
+            value: "$${__service.name}"
+        spanStartTimeShift: "-1h"
+        spanEndTimeShift: "1h"
+
+  # ---------------------------------------------------------------------------
+  # LOKI - Logs (traceId structured metadata → traces)
+  # ---------------------------------------------------------------------------
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        # Log line may carry traceId / trace_id → click through to Jaeger
+        - name: traceId
+          datasourceUid: jaeger
+          matcherRegex: '"trace(?:_)?[iI]d"\s*[:=]\s*"([0-9a-fA-F]{16,32})"'
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View in Jaeger'

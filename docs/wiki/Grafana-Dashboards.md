@@ -1,107 +1,115 @@
 # Grafana Dashboards
 
-This document covers the Grafana dashboard provisioning, panel configuration, exemplar drill-down setup, and usage for the Order Service.
+This document covers the Grafana dashboard provisioning, the unified monitoring stack (metrics + logs + traces), panel configuration, and exemplar/traceId correlation for the Order Service.
 
 ---
 
 ## Overview
 
-The Order Service provides a portable Grafana dashboard JSON file that displays P95 latency with exemplar-based trace drill-down. The dashboard can be imported into any Grafana instance (standalone, TFO-Viz, or Grafana Cloud).
+The Order Service ships a **full observability stack** under the `monitoring` Docker Compose profile: Grafana + Prometheus + Jaeger + Loki, fed by the TFO-Collector. Three datasources are auto-provisioned and wired for cross-signal correlation so a single dashboard can answer *is it healthy?*, *where is the bottleneck?*, and *what do the logs say?* — all linked by `trace_id`.
+
+### Unified correlation dashboard
+
+**Dashboard file:** `configs/grafana/dashboards/order_service_overview.json` (UID: `order-service-overview`)
+
+A single board correlating **metrics + logs + traces**:
+
+| Section           | Signal         | Correlation mechanism                                  |
+| ----------------- | -------------- | ------------------------------------------------------ |
+| Service Health    | Metrics (RED)  | Exemplar dots → Jaeger trace                           |
+| Throughput/Errors | Metrics        | Exemplar dots → Jaeger trace                           |
+| Latency Profile   | Metrics        | P50/P95/P99 exemplars → Jaeger trace                   |
+| Slow Spans        | Metrics/Traces | Per-span exemplars → Jaeger trace                      |
+| Dependencies      | Traces         | Service-graph connector (`traces_service_graph_*`)     |
+| Correlated Logs   | Logs (Loki)    | `traceId` structured metadata → Jaeger (derived field) |
+
+### Correlation flows
+
+```mermaid
+flowchart LR
+    APP[Order Service<br/>SDK] -->|OTLP gRPC| COLLECTOR[TFO-Collector]
+    COLLECTOR -->|traces| JAEGER[Jaeger]
+    COLLECTOR -->|logs| LOKI[Loki]
+    COLLECTOR -->|span_metrics + exemplars| PROM[Prometheus]
+    COLLECTOR -->|all signals| TFO[TFO Platform]
+
+    GRAFANA[Grafana Dashboard] -->|query| PROM
+    GRAFANA -->|query| JAEGER
+    GRAFANA -->|query| LOKI
+
+    PROM -. exemplar trace_id .-> JAEGER
+    LOKI -. traceId .-> JAEGER
+    JAEGER -. service+traceId .-> LOKI
+```
+
+- **metrics → traces**: Prometheus exemplars carry `trace_id`; configured in `exemplarTraceIdDestinations`.
+- **logs → traces**: Loki stores `traceId` as structured metadata; the datasource `derivedFields` makes each log's traceId clickable.
+- **traces → logs**: Jaeger `tracesToLogsV2` jumps from a span into Loki filtered by `service.name` + `traceId`.
+
+---
+
+## Running the monitoring stack
+
+```bash
+# Start the full observability layer (db optional, only needed by the app)
+docker compose --profile monitoring up -d
+```
+
+| Service     | URL                       | Purpose                                  |
+| ----------- | ------------------------- | ---------------------------------------- |
+| Grafana     | http://localhost:3001     | Dashboards (admin / admin)               |
+| Prometheus  | http://localhost:9090     | Metrics + span_metrics exemplars         |
+| Jaeger UI   | http://localhost:16686    | Distributed traces                       |
+| Loki        | http://localhost:3100     | Log aggregation (OTLP native)            |
+| Alertmanager| http://localhost:9093     | Alert routing                            |
+
+Datasources (Prometheus, Jaeger, Loki) and the dashboards are **auto-provisioned** on first boot from `configs/grafana/provisioning/`. No manual import is required.
+
+### Collector fan-out
+
+The TFO-Collector (`configs/otel/tfo-collector.yaml`) fans each signal out to multiple backends:
+
+| Pipeline               | Exporters                                                |
+| ---------------------- | -------------------------------------------------------- |
+| `traces`               | `tfo` (platform), `otlphttp/jaeger`, span_metrics, service_graph |
+| `metrics`              | `tfo`, `prometheus` (scraped at `:8889`)                 |
+| `metrics/span_metrics` | `tfo`, `prometheus` (with **exemplars**)                 |
+| `metrics/service_graph`| `tfo`, `prometheus`                                      |
+| `logs`                 | `tfo` (platform), `otlphttp/loki`                        |
+
+The `prometheus` exporter on port `8889` is the bridge that exposes span_metrics/service_graph histograms **with exemplars** for Prometheus to scrape — this is what makes metrics → traces drill-down work.
+
+---
+
+## P95 Latency dashboard (legacy)
 
 **Dashboard file:** `configs/grafana/dashboards/order_service_p95.json`
 
----
-
-## Dashboard: Order Service — P95 Latency
-
-### Features
-
-- P95 request duration time-series with threshold lines (300ms warning, 500ms critical)
-- Exemplar overlay dots from raw histogram data
-- Click-through from exemplar dots to trace view (Jaeger or Tempo)
-- Route selector variable for filtering by endpoint
-- Legend with last, max, and mean values
-
-### Variables
-
-| Variable        | Type       | Purpose                                                                                                     |
-| --------------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
-| `DS_PROMETHEUS` | Datasource | Prometheus instance for metrics queries                                                                     |
-| `DS_TRACES`     | Datasource | Trace backend (Jaeger or Tempo) for exemplar drill-down                                                     |
-| `http_route`    | Query      | Endpoint filter populated from `label_values(traces_span_metrics_duration_milliseconds_bucket, http_route)` |
-
-### Panel Queries
-
-```mermaid
-flowchart TB
-    subgraph Panel["P95 Request Duration Panel"]
-        A["Query A (visible)\norder_service:http_request_duration_p95:5m{http_route='$http_route'}"]
-        B["Query B (hidden, exemplar source)\ntraces_span_metrics_duration_milliseconds_bucket{http_route='$http_route'}"]
-    end
-
-    subgraph Rendering
-        TS["Time-series line\n(from Query A)"]
-        EX["Exemplar dots\n(from Query B)"]
-    end
-
-    A --> TS
-    B --> EX
-```
-
-- **Query A** — Visible line: P95 from the recording rule
-- **Query B** — Hidden series (data source for exemplar dots only): raw histogram buckets
-
-Both queries have `exemplar: true` enabled.
+A focused single-panel board showing P95 latency per route with exemplar overlay. It is retained for lightweight deployments that only run Prometheus + a trace backend. Variables `DS_PROMETHEUS` and `DS_TRACES` are bound at import time.
 
 ---
 
-## Importing the Dashboard
+## Dashboard variables (unified board)
 
-### Option 1: Grafana UI Import
-
-1. Open Grafana → Dashboards → Import
-2. Upload `configs/grafana/dashboards/order_service_p95.json`
-3. Select your Prometheus datasource for `DS_PROMETHEUS`
-4. Select your trace datasource (Jaeger/Tempo) for `DS_TRACES`
-5. Click Import
-
-### Option 2: Grafana Provisioning
-
-Add to your Grafana provisioning config:
-
-```yaml
-# /etc/grafana/provisioning/dashboards/order-service.yml
-apiVersion: 1
-providers:
-  - name: "Order Service"
-    orgId: 1
-    folder: "Order Service"
-    type: file
-    disableDeletion: false
-    editable: true
-    options:
-      path: /var/lib/grafana/dashboards/order-service
-      foldersFromFilesStructure: false
-```
-
-Then mount the dashboard JSON into `/var/lib/grafana/dashboards/order-service/`.
+| Variable      | Type  | Source                                                                  |
+| ------------- | ----- | ----------------------------------------------------------------------- |
+| `service_name`| Query | `label_values(traces_span_metrics_calls_total, service_name)`           |
+| `http_route`  | Query | `label_values(traces_span_metrics_calls_total{service_name=...}, http_route)` (multi-select + All) |
 
 ---
 
 ## Exemplar Drill-Down
-
-### How It Works
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Grafana
     participant Prometheus
-    participant Jaeger as Jaeger / Tempo
+    participant Jaeger
 
-    User->>Grafana: View P95 panel
-    Grafana->>Prometheus: Query recording rule + exemplars
-    Prometheus-->>Grafana: Time-series + exemplar data points
+    User->>Grafana: View latency panel
+    Grafana->>Prometheus: Query histogram + exemplars
+    Prometheus-->>Grafana: Buckets + exemplar data points (trace_id)
     Grafana->>Grafana: Render exemplar dots on graph
     User->>Grafana: Click exemplar dot
     Grafana->>Grafana: Extract trace_id from exemplar
@@ -109,38 +117,18 @@ sequenceDiagram
     Jaeger-->>User: Display full distributed trace
 ```
 
-### Configuration in Dashboard JSON
+Exemplar → trace routing is configured once in the datasource (`configs/grafana/provisioning/datasources/datasources.yaml`):
 
-The exemplar link is configured in the panel's field config:
-
-```json
-{
-  "links": [
-    {
-      "datasource": {
-        "type": "${DS_TRACES}",
-        "uid": "${DS_TRACES}"
-      },
-      "field": "trace_id",
-      "internal": true,
-      "title": "View Trace",
-      "type": "trace"
-    }
-  ]
-}
+```yaml
+jsonData:
+  exemplarTraceIdDestinations:
+    - name: trace_id
+      datasourceUid: jaeger
 ```
-
-This tells Grafana to:
-
-1. Read the `trace_id` field from the exemplar data point
-2. Open the trace datasource (`DS_TRACES`) with that `trace_id`
-3. Navigate to the trace detail view
 
 ---
 
 ## Threshold Lines
-
-The panel displays visual threshold lines:
 
 | Threshold   | Color  | Meaning                                                   |
 | ----------- | ------ | --------------------------------------------------------- |
@@ -150,40 +138,19 @@ The panel displays visual threshold lines:
 
 ---
 
-## Route Selection
-
-The `http_route` variable allows switching between endpoints:
-
-| Route                       | Description                    |
-| --------------------------- | ------------------------------ |
-| `/api/v1/orders`            | Create/list orders (default)   |
-| `/api/v1/orders/{id}`       | Get/update/delete single order |
-| `/api/v1/orders/{id}/items` | Order items sub-resource       |
-| `/health`                   | Health check                   |
-| `/ready`                    | Readiness check                |
-| `/`                         | Root endpoint                  |
-
-The variable is auto-populated from Prometheus label values, so new endpoints appear automatically once instrumented.
-
----
-
 ## Customization
 
-### Adding More Panels
+### Adding panels
 
-To extend the dashboard, add panels to the `panels` array in the JSON file. Common additions:
+Extend `configs/grafana/dashboards/order_service_overview.json`. Since the dashboard provider sets `allowUiUpdates: true`, edits made in the Grafana UI are persisted; to keep changes in Git, export the JSON back to the file.
 
-- **Request rate** — `sum(rate(traces_span_metrics_calls_total{http_route="$http_route"}[5m])) by (http_status_code)`
-- **Error rate** — `sum(rate(traces_span_metrics_calls_total{http_status_code=~"5.."}[5m])) / sum(rate(traces_span_metrics_calls_total[5m]))`
-- **P50 latency** — Create another recording rule with `histogram_quantile(0.50, ...)`
+### Switching the trace backend
 
-### Changing the Trace Datasource
+The Jaeger datasource can be swapped for **Tempo** by changing the datasource `type` to `tempo` (same uid `jaeger` or update the dashboard references). Exemplar correlation works identically.
 
-The `DS_TRACES` variable supports:
+### Promoting more Loki labels
 
-- **Jaeger** — Set type to `jaeger`
-- **Tempo** — Set type to `tempo`
-- **Zipkin** — Modify the variable query to `zipkin`
+`configs/loki/loki.yaml` promotes `service.name`, `service.namespace`, `deployment.environment`, and `service.version` to stream labels via `otlp_resource_attributes`. Add more attributes there to enable additional log stream selectors.
 
 ---
 
@@ -191,4 +158,5 @@ The `DS_TRACES` variable supports:
 
 - [Observability](Observability.md) — Telemetry pipeline and exemplar flow
 - [Alerting](Alerting.md) — Alert rules that correspond to dashboard thresholds
-- [Docker Compose](Docker-Compose.md) — Service deployment including Prometheus
+- [Docker Compose](Docker-Compose.md) — Service deployment including the monitoring profile
+

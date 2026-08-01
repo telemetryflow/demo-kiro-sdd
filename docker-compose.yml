@@ -58,6 +58,12 @@ volumes:
     driver: local
   vol_tfo_agent_data:
     driver: local
+  vol_grafana_data:
+    driver: local
+  vol_loki_data:
+    driver: local
+  vol_jaeger_data:
+    driver: local
 
 #================================================================================================
 # SERVICES
@@ -291,6 +297,108 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  #----------------------------------------------------------------------------------------------
+  # LOKI - Log Aggregation (OTLP native ingestion, trace correlation)
+  #----------------------------------------------------------------------------------------------
+  # Receives OTLP logs from TFO-Collector on /otlp/v1/logs (Loki 3.x native).
+  # Stores traceId as structured metadata enabling Grafana metrics/logs/traces correlation.
+  loki:
+    profiles: ["monitoring", "all"]
+    platform: linux/amd64
+    image: grafana/loki:${LOKI_VERSION:-3.3.2}
+    container_name: ${CONTAINER_LOKI:-tfo_demo_loki}
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    ports:
+      - "${PORT_LOKI:-3100}:3100"
+    volumes:
+      - ./configs/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - vol_loki_data:/loki
+    networks:
+      order_service_net:
+        ipv4_address: ${CONTAINER_IP_LOKI:-172.152.152.60}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  #----------------------------------------------------------------------------------------------
+  # JAEGER - Distributed Tracing (OTLP native ingestion)
+  #----------------------------------------------------------------------------------------------
+  # Accepts OTLP traces on 4317 (gRPC) and 4318 (HTTP).
+  # In-memory Badger storage for demo; queryable via Grafana Jaeger datasource.
+  jaeger:
+    profiles: ["monitoring", "all"]
+    platform: linux/amd64
+    image: jaegertracing/all-in-one:${JAEGER_VERSION:-1.62.0}
+    container_name: ${CONTAINER_JAEGER:-tfo_demo_jaeger}
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - COLLECTOR_OTLP_GRPC_HOST_PORT=:4317
+      - COLLECTOR_OTLP_HTTP_HOST_PORT=:4318
+      - SPAN_STORAGE_TYPE=badger
+      - BADGER_EPHEMERAL=false
+      - BADGER_DIRECTORY_VALUE=/badger/data
+      - BADGER_DIRECTORY_KEY=/badger/key
+    ports:
+      - "${PORT_JAEGER_UI:-16686}:16686"   # Jaeger UI
+      - "${PORT_JAEGER_GRPC:-14250}:14250" # Jaeger gRPC (internal)
+    volumes:
+      - vol_jaeger_data:/badger
+    networks:
+      order_service_net:
+        ipv4_address: ${CONTAINER_IP_JAEGER:-172.152.152.65}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:14269/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  #----------------------------------------------------------------------------------------------
+  # GRAFANA - Visualization & Unified Observability Dashboard
+  #----------------------------------------------------------------------------------------------
+  # Provisioned datasources: Prometheus (metrics), Jaeger (traces), Loki (logs).
+  # Correlation: metrics exemplars → traces, logs traceId → traces.
+  grafana:
+    profiles: ["monitoring", "all"]
+    platform: linux/amd64
+    image: grafana/grafana:${GRAFANA_VERSION:-11.4.0}
+    container_name: ${CONTAINER_GRAFANA:-tfo_demo_grafana}
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    environment:
+      - TZ=${TZ:-UTC}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+    ports:
+      - "${PORT_GRAFANA:-3001}:3000"
+    volumes:
+      - ./configs/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./configs/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - vol_grafana_data:/var/lib/grafana
+    networks:
+      order_service_net:
+        ipv4_address: ${CONTAINER_IP_GRAFANA:-172.152.152.70}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   #==============================================================================================
   # PLATFORM SERVICES (aligned with TFO-demo monolith)

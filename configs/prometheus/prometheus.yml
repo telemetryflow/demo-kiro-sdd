@@ -1,8 +1,9 @@
 # =============================================================================
 # Prometheus Configuration - Order Service Observability
 # =============================================================================
-# Scrapes metrics from OTEL Collector with exemplars support
-# Exemplars enable click-through from metrics to traces in Grafana
+# Scrapes metrics from TFO-Collector with exemplars support.
+# Exemplars (trace_id on span_metrics histograms) enable click-through from
+# a metric sample directly to the trace in Jaeger via the Grafana datasource.
 # =============================================================================
 
 global:
@@ -23,19 +24,25 @@ alerting:
 
 # Scrape configurations
 scrape_configs:
-  # OTEL Collector metrics (includes spanmetrics with exemplars)
-  - job_name: 'otel-collector'
+  # TFO-Collector derived metrics (span_metrics + service_graph + app metrics).
+  # The prometheus exporter lives on 8889 and emits OpenMetrics with exemplars.
+  - job_name: 'tfo-collector'
+    metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 8s
     static_configs:
-      - targets: ['otel-collector:8889']
-    # Enable exemplar scraping
+      - targets: ['tfo-collector:8889']
+        labels:
+          source: 'prometheus-exporter'
     enable_http2: true
 
-  # OTEL Collector internal metrics
-  - job_name: 'otel-collector-internal'
+  # TFO-Collector internal telemetry (collector's own health/perf).
+  - job_name: 'tfo-collector-internal'
     scrape_interval: 15s
     static_configs:
-      - targets: ['otel-collector:8888']
+      - targets: ['tfo-collector:8888']
+        labels:
+          source: 'internal-telemetry'
 
   # Prometheus self-monitoring
   - job_name: 'prometheus'
