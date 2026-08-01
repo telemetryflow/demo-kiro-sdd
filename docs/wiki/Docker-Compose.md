@@ -34,7 +34,7 @@ graph TB
         BACKEND["TFO Backend"]
         VIZ["TFO Viz"]
         CH["ClickHouse"]
-        REDIS["Redis"]
+        VALKEY["Valkey"]
         NATS["NATS"]
         PG3["TFO PostgreSQL"]
     end
@@ -49,7 +49,7 @@ graph TB
 | `db`         | PostgreSQL                                                 | Database-only for migrations or external app development |
 | `app`        | API + PostgreSQL + TFO Collector                           | Application development with telemetry export            |
 | `monitoring` | TFO Collector + Prometheus + Alertmanager                  | Observability stack (no application)                     |
-| `platform`   | TFO Backend + Viz + ClickHouse + Redis + NATS + PostgreSQL | Full TFO Platform                                        |
+| `platform`   | TFO Backend + Viz + ClickHouse + Valkey + NATS + PostgreSQL | Full TFO Platform                                        |
 | `all`        | Everything above combined                                  | Complete local environment                               |
 
 ### Usage
@@ -85,7 +85,7 @@ docker compose --profile all down
 
 | Service    | Image                | Port(s) | Static IP      | Profiles     |
 | ---------- | -------------------- | ------- | -------------- | ------------ |
-| `postgres` | `postgres:16-alpine` | 5432    | 172.152.152.20 | db, app, all |
+| `postgres`            | `postgres:18-alpine`                         | 5432    | 172.152.152.20 | db, app, all |
 | `api`      | Custom (Dockerfile)  | 8080    | 172.152.152.10 | app, all     |
 
 ### Monitoring Services
@@ -93,19 +93,22 @@ docker compose --profile all down
 | Service         | Image                                         | Port(s)                              | Static IP      | Profiles             |
 | --------------- | --------------------------------------------- | ------------------------------------ | -------------- | -------------------- |
 | `tfo-collector` | `telemetryflow/telemetryflow-collector:1.3.0` | 4317, 4318, 8889, 13133, 55679, 1777 | 172.152.152.30 | app, monitoring, all |
-| `prometheus`    | `prom/prometheus:v3.4.0`                      | 9090                                 | 172.152.152.50 | monitoring, all      |
-| `alertmanager`  | `prom/alertmanager:v0.28.1`                   | 9093                                 | 172.152.152.55 | monitoring, all      |
+| `prometheus`    | `prom/prometheus:v3.13.2`                     | 9090                                 | 172.152.152.50 | monitoring, all      |
+| `alertmanager`  | `prom/alertmanager:v0.33.1`                   | 9093                                 | 172.152.152.55 | monitoring, all      |
+| `loki`          | `grafana/loki:3.7.4`                          | 3100                                 | 172.152.152.60 | monitoring, all      |
+| `jaeger`        | `jaegertracing/all-in-one:1.76.0`             | 16686, 14250                         | 172.152.152.65 | monitoring, all      |
+| `grafana`       | `grafana/grafana:13.1.1`                      | 3001                                 | 172.152.152.70 | monitoring, all      |
 
 ### Platform Services
 
 | Service               | Image                                        | Port(s)    | Static IP      | Profiles |
 | --------------------- | -------------------------------------------- | ---------- | -------------- | -------- |
-| `tfo-demo-postgres`   | `postgres:16-alpine`                         | 5433       | 172.152.153.20 | platform |
-| `tfo-demo-clickhouse` | `clickhouse/clickhouse-server:26.7`          | 8123, 9000 | 172.152.153.40 | platform |
-| `tfo-demo-redis`      | `redis:7-alpine`                             | 6380       | 172.152.153.50 | platform |
-| `tfo-demo-nats`       | `nats:2-alpine`                              | 4222, 8222 | 172.152.153.55 | platform |
-| `tfo-backend`         | `telemetryflow/telemetryflow-platform:1.4.0` | 3000       | 172.152.153.10 | platform |
-| `tfo-viz`             | `telemetryflow/telemetryflow-viz:1.4.0`      | 80         | 172.152.153.15 | platform |
+| `tfo-demo-postgres`   | `postgres:18-alpine`                         | 5433       | 172.152.153.20 | platform |
+| `tfo-demo-clickhouse` | `clickhouse/clickhouse-server:26.7-alpine`   | 8123, 9000 | 172.152.153.40 | platform |
+| `tfo-demo-valkey`     | `valkey/valkey:8-alpine`                     | 6380       | 172.152.153.50 | platform |
+| `tfo-demo-nats`       | `nats:2.14-alpine`                           | 4222, 8222 | 172.152.153.55 | platform |
+| `tfo-backend`         | `telemetryflow/telemetryflow-platform:1.4.4` | 3000       | 172.152.153.10 | platform |
+| `tfo-viz`             | `telemetryflow/telemetryflow-viz:1.4.4`      | 80         | 172.152.153.15 | platform |
 
 ---
 
@@ -128,7 +131,7 @@ graph TB
             P15["tfo-viz :15"]
             P20["tfo-postgres :20"]
             P40["clickhouse :40"]
-            P50["redis :50"]
+            P50["valkey :50"]
             P55["nats :55"]
         end
     end
@@ -163,7 +166,7 @@ Static IP assignments enable deterministic DNS-free service discovery within the
 | `prometheus`          | `vol_prometheus_data` (named)              | Metrics TSDB        |
 | `tfo-demo-postgres`   | `${VOLUMES_BASE_PATH}/tfo-demo/postgresql` | Platform database   |
 | `tfo-demo-clickhouse` | `${VOLUMES_BASE_PATH}/tfo-demo/clickhouse` | Time-series storage |
-| `tfo-demo-redis`      | `${VOLUMES_BASE_PATH}/tfo-demo/redis`      | Cache + queues      |
+| `tfo-demo-valkey`     | `${VOLUMES_BASE_PATH}/tfo-demo/valkey`      | Cache + queues      |
 | `tfo-demo-nats`       | `${VOLUMES_BASE_PATH}/tfo-demo/nats`       | Message store       |
 
 ---
@@ -240,7 +243,7 @@ flowchart TB
     BE["tfo-backend"]
     VIZ["tfo-viz"]
     CH["tfo-demo-clickhouse"]
-    REDIS["tfo-demo-redis"]
+    VALKEY["tfo-demo-valkey"]
     NATS["tfo-demo-nats"]
     PG2["tfo-demo-postgres"]
 
@@ -251,7 +254,7 @@ flowchart TB
     VIZ -->|"depends_on: healthy"| BE
     BE -->|"depends_on: healthy"| PG2
     BE -->|"depends_on: healthy"| CH
-    BE -->|"depends_on: healthy"| REDIS
+    BE -->|"depends_on: healthy"| VALKEY
     BE -->|"depends_on: healthy"| NATS
 ```
 

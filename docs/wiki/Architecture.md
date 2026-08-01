@@ -163,7 +163,7 @@ graph TB
         BACKEND[TFO Backend :3000]
         VIZ[TFO Viz :8080]
         CH[(ClickHouse)]
-        REDIS[(Redis)]
+        VALKEY[(Valkey)]
         NATS[NATS]
     end
 
@@ -174,7 +174,7 @@ graph TB
     COL -->|tfo exporter| BACKEND
     PROM -->|alert push| AM
     BACKEND --> CH
-    BACKEND --> REDIS
+    BACKEND --> VALKEY
     BACKEND --> NATS
     VIZ -->|API proxy| BACKEND
 ```
@@ -184,14 +184,17 @@ graph TB
 | Service           | Image                                         | Port(s)                 | Profile(s)                 |
 | ----------------- | --------------------------------------------- | ----------------------- | -------------------------- |
 | Order Service API | Custom (Dockerfile)                           | 8080                    | `app`, `all`               |
-| PostgreSQL        | `postgres:16-alpine`                          | 5432                    | `db`, `app`, `all`         |
+| PostgreSQL        | `postgres:18-alpine`                          | 5432                    | `db`, `app`, `all`         |
 | TFO Collector     | `telemetryflow/telemetryflow-collector:1.3.0` | 4317, 4318, 8889, 13133 | `app`, `monitoring`, `all` |
-| Prometheus        | `prom/prometheus:v3.4.0`                      | 9090                    | `monitoring`, `all`        |
-| Alertmanager      | `prom/alertmanager:v0.28.1`                   | 9093                    | `monitoring`, `all`        |
-| TFO Backend       | `telemetryflow/telemetryflow-platform:1.4.0`  | 3000                    | `platform`                 |
-| TFO Viz           | `telemetryflow/telemetryflow-viz:1.4.0`       | 80                      | `platform`                 |
-| ClickHouse        | `clickhouse/clickhouse-server:26.7`           | 8123, 9000              | `platform`                 |
-| Redis             | `redis:7-alpine`                              | 6379                    | `platform`                 |
+| Prometheus        | `prom/prometheus:v3.13.2`                     | 9090                    | `monitoring`, `all`        |
+| Alertmanager      | `prom/alertmanager:v0.33.1`                   | 9093                    | `monitoring`, `all`        |
+| Loki              | `grafana/loki:3.7.4`                          | 3100                    | `monitoring`, `all`        |
+| Jaeger            | `jaegertracing/all-in-one:1.76.0`             | 16686                   | `monitoring`, `all`        |
+| Grafana           | `grafana/grafana:13.1.1`                      | 3001                    | `monitoring`, `all`        |
+| TFO Backend       | `telemetryflow/telemetryflow-platform:1.4.4`  | 3000                    | `platform`                 |
+| TFO Viz           | `telemetryflow/telemetryflow-viz:1.4.4`       | 80                      | `platform`                 |
+| ClickHouse        | `clickhouse/clickhouse-server:26.7-alpine`    | 8123, 9000              | `platform`                 |
+| Valkey            | `valkey/valkey:8-alpine`                      | 6379                    | `platform`                 |
 | NATS              | `nats:2-alpine`                               | 4222, 8222              | `platform`                 |
 
 ---

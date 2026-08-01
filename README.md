@@ -165,7 +165,7 @@ docker compose --profile app logs -f api
 | `db`         | PostgreSQL                                                |
 | `app`        | API (Order Service)                                       |
 | `monitoring` | TFO-Collector, Prometheus                                 |
-| `platform`   | TFO-Backend, TFO-Viz, PostgreSQL, ClickHouse, Redis, NATS |
+| `platform`   | TFO-Backend, TFO-Viz, PostgreSQL, ClickHouse, Valkey, NATS |
 | `all`        | All services                                              |
 
 ```bash
@@ -411,7 +411,7 @@ For full observability visualization, start the platform profile:
 docker compose --profile platform up -d
 ```
 
-This brings up TFO-Backend, TFO-Viz, and supporting infrastructure (PostgreSQL, ClickHouse, Redis, NATS) for end-to-end telemetry visualization.
+This brings up TFO-Backend, TFO-Viz, and supporting infrastructure (PostgreSQL, ClickHouse, Valkey, NATS) for end-to-end telemetry visualization.
 
 ## License
 

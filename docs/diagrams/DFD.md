@@ -64,7 +64,7 @@ graph TB
 
     subgraph Data Layer
         DB[(PostgreSQL)]
-        REDIS[(Redis Cache)]
+        VALKEY[(Valkey Cache)]
     end
     subgraph Observability
         TF[TelemetryFlow]
@@ -84,7 +84,7 @@ graph TB
     REPO --> PERSIST
     PERSIST --> DB
     PERSIST -.-> CACHE
-    CACHE -.-> REDIS
+    CACHE -.-> VALKEY
     HANDLER --> TF
     CMD --> TF
     PERSIST --> TF
