@@ -25,31 +25,31 @@ import (
 	"github.com/telemetryflow/order-service/internal/domain/repository"
 )
 
-// OrderitemCommandHandler handles commands for Orderitem entity
-type OrderitemCommandHandler struct {
-	repo repository.OrderitemRepository
+// OrderItemCommandHandler handles commands for OrderItem entity
+type OrderItemCommandHandler struct {
+	repo repository.OrderItemRepository
 }
 
-// NewOrderitemCommandHandler creates a new Orderitem command handler
-func NewOrderitemCommandHandler(repo repository.OrderitemRepository) *OrderitemCommandHandler {
-	return &OrderitemCommandHandler{
+// NewOrderItemCommandHandler creates a new OrderItem command handler
+func NewOrderItemCommandHandler(repo repository.OrderItemRepository) *OrderItemCommandHandler {
+	return &OrderItemCommandHandler{
 		repo: repo,
 	}
 }
 
-// HandleOrderitemCreate handles create orderitem command
-func (h *OrderitemCommandHandler) HandleOrderitemCreate(ctx context.Context, cmd *command.CreateOrderitemCommand) error {
+// HandleOrderItemCreate handles create orderItem command
+func (h *OrderItemCommandHandler) HandleOrderItemCreate(ctx context.Context, cmd *command.CreateOrderItemCommand) error {
 	entity := cmd.ToEntity()
 	return h.repo.Create(ctx, entity)
 }
 
-// HandleOrderitemUpdate handles update orderitem command
-func (h *OrderitemCommandHandler) HandleOrderitemUpdate(ctx context.Context, cmd *command.UpdateOrderitemCommand) error {
+// HandleOrderItemUpdate handles update orderItem command
+func (h *OrderItemCommandHandler) HandleOrderItemUpdate(ctx context.Context, cmd *command.UpdateOrderItemCommand) error {
 	entity := cmd.ToEntity()
 	return h.repo.Update(ctx, entity)
 }
 
-// HandleOrderitemDelete handles delete orderitem command
-func (h *OrderitemCommandHandler) HandleOrderitemDelete(ctx context.Context, cmd *command.DeleteOrderitemCommand) error {
+// HandleOrderItemDelete handles delete orderItem command
+func (h *OrderItemCommandHandler) HandleOrderItemDelete(ctx context.Context, cmd *command.DeleteOrderItemCommand) error {
 	return h.repo.Delete(ctx, cmd.ID)
 }

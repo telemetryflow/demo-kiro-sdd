@@ -28,24 +28,24 @@ import (
 	"github.com/telemetryflow/order-service/pkg/response"
 )
 
-// OrderitemHandler handles orderitem HTTP requests
-type OrderitemHandler struct {
-	commandHandler *handler.OrderitemCommandHandler
-	queryHandler   *handler.OrderitemQueryHandler
+// OrderItemHandler handles orderItem HTTP requests
+type OrderItemHandler struct {
+	commandHandler *handler.OrderItemCommandHandler
+	queryHandler   *handler.OrderItemQueryHandler
 }
 
-// NewOrderitemHandler creates a new orderitem handler
-func NewOrderitemHandler(
-	cmdHandler *handler.OrderitemCommandHandler,
-	qryHandler *handler.OrderitemQueryHandler,
-) *OrderitemHandler {
-	return &OrderitemHandler{
+// NewOrderItemHandler creates a new orderItem handler
+func NewOrderItemHandler(
+	cmdHandler *handler.OrderItemCommandHandler,
+	qryHandler *handler.OrderItemQueryHandler,
+) *OrderItemHandler {
+	return &OrderItemHandler{
 		commandHandler: cmdHandler,
 		queryHandler:   qryHandler,
 	}
 }
 
-// RegisterRoutes registers orderitem routes as a nested sub-resource of orders:
+// RegisterRoutes registers orderItem routes as a nested sub-resource of orders:
 //   POST   /orders/:order_id/items
 //   GET    /orders/:order_id/items
 //   GET    /orders/:order_id/items/:id
@@ -53,7 +53,7 @@ func NewOrderitemHandler(
 //   DELETE /orders/:order_id/items/:id
 //
 // order_id is always taken from the URL path, never from the request body.
-func (h *OrderitemHandler) RegisterRoutes(g *echo.Group) {
+func (h *OrderItemHandler) RegisterRoutes(g *echo.Group) {
 	g.POST("/orders/:order_id/items", h.Create)
 	g.GET("/orders/:order_id/items", h.List)
 	g.GET("/orders/:order_id/items/:id", h.GetByID)
@@ -71,13 +71,13 @@ func parseOrderID(c echo.Context) (uuid.UUID, error) {
 }
 
 // Create handles POST /orders/:order_id/items
-func (h *OrderitemHandler) Create(c echo.Context) error {
+func (h *OrderItemHandler) Create(c echo.Context) error {
 	orderID, err := parseOrderID(c)
 	if err != nil {
 		return response.BadRequest(c, "Invalid order_id format")
 	}
 
-	var req dto.CreateOrderitemRequest
+	var req dto.CreateOrderItemRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request body")
 	}
@@ -86,14 +86,14 @@ func (h *OrderitemHandler) Create(c echo.Context) error {
 		return response.BadRequest(c, err.Error())
 	}
 
-	cmd := &command.CreateOrderitemCommand{
+	cmd := &command.CreateOrderItemCommand{
 		OrderID:   orderID,
 		ProductID: req.ProductID,
 		Quantity:  req.Quantity,
 		Price:     req.Price,
 	}
 
-	if err := h.commandHandler.HandleOrderitemCreate(c.Request().Context(), cmd); err != nil {
+	if err := h.commandHandler.HandleOrderItemCreate(c.Request().Context(), cmd); err != nil {
 		return response.InternalError(c, err.Error())
 	}
 
@@ -101,13 +101,13 @@ func (h *OrderitemHandler) Create(c echo.Context) error {
 }
 
 // List handles GET /orders/:order_id/items
-func (h *OrderitemHandler) List(c echo.Context) error {
+func (h *OrderItemHandler) List(c echo.Context) error {
 	orderID, err := parseOrderID(c)
 	if err != nil {
 		return response.BadRequest(c, "Invalid order_id format")
 	}
 
-	result, err := h.queryHandler.HandleOrderitemGetByOrderID(c.Request().Context(), orderID)
+	result, err := h.queryHandler.HandleOrderItemGetByOrderID(c.Request().Context(), orderID)
 	if err != nil {
 		return response.InternalError(c, err.Error())
 	}
@@ -116,7 +116,7 @@ func (h *OrderitemHandler) List(c echo.Context) error {
 }
 
 // GetByID handles GET /orders/:order_id/items/:id
-func (h *OrderitemHandler) GetByID(c echo.Context) error {
+func (h *OrderItemHandler) GetByID(c echo.Context) error {
 	orderID, err := parseOrderID(c)
 	if err != nil {
 		return response.BadRequest(c, "Invalid order_id format")
@@ -127,8 +127,8 @@ func (h *OrderitemHandler) GetByID(c echo.Context) error {
 		return response.BadRequest(c, "Invalid ID format")
 	}
 
-	q := &query.GetOrderitemByIDQuery{ID: id}
-	result, err := h.queryHandler.HandleOrderitemGetByID(c.Request().Context(), q)
+	q := &query.GetOrderItemByIDQuery{ID: id}
+	result, err := h.queryHandler.HandleOrderItemGetByID(c.Request().Context(), q)
 	if err != nil {
 		return response.NotFound(c, "Order item not found")
 	}
@@ -142,7 +142,7 @@ func (h *OrderitemHandler) GetByID(c echo.Context) error {
 }
 
 // Update handles PUT /orders/:order_id/items/:id
-func (h *OrderitemHandler) Update(c echo.Context) error {
+func (h *OrderItemHandler) Update(c echo.Context) error {
 	orderID, err := parseOrderID(c)
 	if err != nil {
 		return response.BadRequest(c, "Invalid order_id format")
@@ -153,7 +153,7 @@ func (h *OrderitemHandler) Update(c echo.Context) error {
 		return response.BadRequest(c, "Invalid ID format")
 	}
 
-	var req dto.UpdateOrderitemRequest
+	var req dto.UpdateOrderItemRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request body")
 	}
@@ -162,7 +162,7 @@ func (h *OrderitemHandler) Update(c echo.Context) error {
 		return response.BadRequest(c, err.Error())
 	}
 
-	cmd := &command.UpdateOrderitemCommand{
+	cmd := &command.UpdateOrderItemCommand{
 		ID:        id,
 		OrderID:   orderID,
 		ProductID: req.ProductID,
@@ -170,7 +170,7 @@ func (h *OrderitemHandler) Update(c echo.Context) error {
 		Price:     req.Price,
 	}
 
-	if err := h.commandHandler.HandleOrderitemUpdate(c.Request().Context(), cmd); err != nil {
+	if err := h.commandHandler.HandleOrderItemUpdate(c.Request().Context(), cmd); err != nil {
 		return response.InternalError(c, err.Error())
 	}
 
@@ -178,7 +178,7 @@ func (h *OrderitemHandler) Update(c echo.Context) error {
 }
 
 // Delete handles DELETE /orders/:order_id/items/:id
-func (h *OrderitemHandler) Delete(c echo.Context) error {
+func (h *OrderItemHandler) Delete(c echo.Context) error {
 	orderID, err := parseOrderID(c)
 	if err != nil {
 		return response.BadRequest(c, "Invalid order_id format")
@@ -190,13 +190,13 @@ func (h *OrderitemHandler) Delete(c echo.Context) error {
 	}
 
 	// Ownership check before delete: verify the item belongs to this order.
-	existing, err := h.queryHandler.HandleOrderitemGetByID(c.Request().Context(), &query.GetOrderitemByIDQuery{ID: id})
+	existing, err := h.queryHandler.HandleOrderItemGetByID(c.Request().Context(), &query.GetOrderItemByIDQuery{ID: id})
 	if err != nil || existing == nil || existing.OrderID != orderID {
 		return response.NotFound(c, "Order item not found")
 	}
 
-	cmd := &command.DeleteOrderitemCommand{ID: id}
-	if err := h.commandHandler.HandleOrderitemDelete(c.Request().Context(), cmd); err != nil {
+	cmd := &command.DeleteOrderItemCommand{ID: id}
+	if err := h.commandHandler.HandleOrderItemDelete(c.Request().Context(), cmd); err != nil {
 		return response.InternalError(c, err.Error())
 	}
 

@@ -253,28 +253,28 @@ func TestOrder_Validate(t *testing.T) {
 }
 
 // =============================================================================
-// Orderitem Entity Tests
+// OrderItem Entity Tests
 //
-// Tests for the Orderitem entity which represents individual line items within
+// Tests for the OrderItem entity which represents individual line items within
 // an order, including product references, quantities, and prices.
 // =============================================================================
 
-// TestOrderitem_TableName verifies the GORM table name convention for Orderitem entities.
-func TestOrderitem_TableName(t *testing.T) {
+// TestOrderItem_TableName verifies the GORM table name convention for OrderItem entities.
+func TestOrderItem_TableName(t *testing.T) {
 	t.Run("returns correct table name", func(t *testing.T) {
-		item := entity.Orderitem{}
+		item := entity.OrderItem{}
 		assert.Equal(t, "order_items", item.TableName())
 	})
 }
 
-func TestNewOrderitem(t *testing.T) {
-	t.Run("creates orderitem with all fields", func(t *testing.T) {
+func TestNewOrderItem(t *testing.T) {
+	t.Run("creates orderItem with all fields", func(t *testing.T) {
 		orderID := uuid.New()
 		productID := uuid.New()
 		quantity := 5
 		price := 29.99
 
-		item := entity.NewOrderitem(orderID, productID, quantity, price)
+		item := entity.NewOrderItem(orderID, productID, quantity, price)
 
 		require.NotNil(t, item)
 		assert.NotEqual(t, uuid.Nil, item.ID)
@@ -286,22 +286,22 @@ func TestNewOrderitem(t *testing.T) {
 		assert.False(t, item.UpdatedAt.IsZero())
 	})
 
-	t.Run("creates orderitem with zero quantity", func(t *testing.T) {
-		item := entity.NewOrderitem(uuid.New(), uuid.New(), 0, 10.0)
+	t.Run("creates orderItem with zero quantity", func(t *testing.T) {
+		item := entity.NewOrderItem(uuid.New(), uuid.New(), 0, 10.0)
 		assert.Equal(t, 0, item.Quantity)
 	})
 
-	t.Run("creates orderitem with zero price", func(t *testing.T) {
-		item := entity.NewOrderitem(uuid.New(), uuid.New(), 1, 0)
+	t.Run("creates orderItem with zero price", func(t *testing.T) {
+		item := entity.NewOrderItem(uuid.New(), uuid.New(), 1, 0)
 		assert.Equal(t, float64(0), item.Price)
 	})
 }
 
-func TestOrderitem_Update(t *testing.T) {
+func TestOrderItem_Update(t *testing.T) {
 	t.Run("updates all fields", func(t *testing.T) {
 		originalOrderID := uuid.New()
 		originalProductID := uuid.New()
-		item := entity.NewOrderitem(originalOrderID, originalProductID, 1, 10.0)
+		item := entity.NewOrderItem(originalOrderID, originalProductID, 1, 10.0)
 		originalUpdatedAt := item.UpdatedAt
 
 		// Wait to ensure different timestamp
@@ -322,7 +322,7 @@ func TestOrderitem_Update(t *testing.T) {
 	})
 
 	t.Run("preserves ID", func(t *testing.T) {
-		item := entity.NewOrderitem(uuid.New(), uuid.New(), 1, 10.0)
+		item := entity.NewOrderItem(uuid.New(), uuid.New(), 1, 10.0)
 		originalID := item.ID
 
 		item.Update(uuid.New(), uuid.New(), 2, 20.0)
@@ -331,9 +331,9 @@ func TestOrderitem_Update(t *testing.T) {
 	})
 }
 
-func TestOrderitem_Validate(t *testing.T) {
-	t.Run("returns nil for valid orderitem", func(t *testing.T) {
-		item := entity.NewOrderitem(uuid.New(), uuid.New(), 1, 10.0)
+func TestOrderItem_Validate(t *testing.T) {
+	t.Run("returns nil for valid orderItem", func(t *testing.T) {
+		item := entity.NewOrderItem(uuid.New(), uuid.New(), 1, 10.0)
 		err := item.Validate()
 		assert.NoError(t, err)
 	})
@@ -342,18 +342,18 @@ func TestOrderitem_Validate(t *testing.T) {
 // =============================================================================
 // Order with Items Integration
 //
-// Tests for the Order-Orderitem relationship, verifying that orders can
+// Tests for the Order-OrderItem relationship, verifying that orders can
 // properly contain and manage their associated line items.
 // =============================================================================
 
-// TestOrder_WithItems verifies the one-to-many relationship between Order and Orderitem.
+// TestOrder_WithItems verifies the one-to-many relationship between Order and OrderItem.
 func TestOrder_WithItems(t *testing.T) {
 	t.Run("order can have multiple items", func(t *testing.T) {
 		order := entity.NewOrder(uuid.New(), 100.0, "pending")
 
-		items := []entity.Orderitem{
-			*entity.NewOrderitem(order.ID, uuid.New(), 2, 25.0),
-			*entity.NewOrderitem(order.ID, uuid.New(), 1, 50.0),
+		items := []entity.OrderItem{
+			*entity.NewOrderItem(order.ID, uuid.New(), 2, 25.0),
+			*entity.NewOrderItem(order.ID, uuid.New(), 1, 50.0),
 		}
 		order.Items = items
 
@@ -384,9 +384,9 @@ func TestEntity_EdgeCases(t *testing.T) {
 		assert.Equal(t, largeTotal, order.Total)
 	})
 
-	t.Run("orderitem with very large quantity", func(t *testing.T) {
+	t.Run("orderItem with very large quantity", func(t *testing.T) {
 		largeQuantity := 999999
-		item := entity.NewOrderitem(uuid.New(), uuid.New(), largeQuantity, 1.0)
+		item := entity.NewOrderItem(uuid.New(), uuid.New(), largeQuantity, 1.0)
 		assert.Equal(t, largeQuantity, item.Quantity)
 	})
 
@@ -450,11 +450,11 @@ func BenchmarkNewOrder(b *testing.B) {
 	}
 }
 
-func BenchmarkNewOrderitem(b *testing.B) {
+func BenchmarkNewOrderItem(b *testing.B) {
 	orderID := uuid.New()
 	productID := uuid.New()
 	for i := 0; i < b.N; i++ {
-		_ = entity.NewOrderitem(orderID, productID, 1, 10.0)
+		_ = entity.NewOrderItem(orderID, productID, 1, 10.0)
 	}
 }
 

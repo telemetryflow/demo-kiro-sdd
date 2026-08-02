@@ -22,8 +22,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// Orderitem represents the orderitem domain entity
-type Orderitem struct {
+// OrderItem represents the orderItem domain entity
+type OrderItem struct {
 	Base
 	OrderID   uuid.UUID `json:"order_id" gorm:"type:uuid;not null;index"`
 	ProductID uuid.UUID `json:"product_id" gorm:"type:uuid;not null;index"`
@@ -32,13 +32,13 @@ type Orderitem struct {
 }
 
 // TableName returns the table name for GORM
-func (Orderitem) TableName() string {
+func (OrderItem) TableName() string {
 	return "order_items"
 }
 
-// NewOrderitem creates a new Orderitem entity
-func NewOrderitem(orderID uuid.UUID, productID uuid.UUID, quantity int, price float64) *Orderitem {
-	return &Orderitem{
+// NewOrderItem creates a new OrderItem entity
+func NewOrderItem(orderID uuid.UUID, productID uuid.UUID, quantity int, price float64) *OrderItem {
+	return &OrderItem{
 		Base:      NewBase(),
 		OrderID:   orderID,
 		ProductID: productID,
@@ -47,8 +47,8 @@ func NewOrderitem(orderID uuid.UUID, productID uuid.UUID, quantity int, price fl
 	}
 }
 
-// Update updates the orderitem fields
-func (e *Orderitem) Update(orderID uuid.UUID, productID uuid.UUID, quantity int, price float64) {
+// Update updates the orderItem fields
+func (e *OrderItem) Update(orderID uuid.UUID, productID uuid.UUID, quantity int, price float64) {
 	e.OrderID = orderID
 	e.ProductID = productID
 	e.Quantity = quantity
@@ -57,7 +57,7 @@ func (e *Orderitem) Update(orderID uuid.UUID, productID uuid.UUID, quantity int,
 }
 
 // Validate validates the entity
-func (e *Orderitem) Validate() error {
+func (e *OrderItem) Validate() error {
 	// Add validation logic here
 	return nil
 }

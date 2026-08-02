@@ -23,8 +23,8 @@ import (
 	"github.com/telemetryflow/order-service/internal/domain/entity"
 )
 
-// CreateOrderitemCommand represents the create orderitem command
-type CreateOrderitemCommand struct {
+// CreateOrderItemCommand represents the create orderItem command
+type CreateOrderItemCommand struct {
 	OrderID   uuid.UUID `json:"order_id" validate:"required"`
 	ProductID uuid.UUID `json:"product_id" validate:"required"`
 	Quantity  int       `json:"quantity" validate:"required"`
@@ -32,18 +32,18 @@ type CreateOrderitemCommand struct {
 }
 
 // Validate validates the create command
-func (c *CreateOrderitemCommand) Validate() error {
+func (c *CreateOrderItemCommand) Validate() error {
 	// Add validation logic
 	return nil
 }
 
 // ToEntity converts the command to an entity
-func (c *CreateOrderitemCommand) ToEntity() *entity.Orderitem {
-	return entity.NewOrderitem(c.OrderID, c.ProductID, c.Quantity, c.Price)
+func (c *CreateOrderItemCommand) ToEntity() *entity.OrderItem {
+	return entity.NewOrderItem(c.OrderID, c.ProductID, c.Quantity, c.Price)
 }
 
-// UpdateOrderitemCommand represents the update orderitem command
-type UpdateOrderitemCommand struct {
+// UpdateOrderItemCommand represents the update orderItem command
+type UpdateOrderItemCommand struct {
 	ID        uuid.UUID `json:"id" validate:"required"`
 	OrderID   uuid.UUID `json:"order_id" validate:"required"`
 	ProductID uuid.UUID `json:"product_id" validate:"required"`
@@ -52,7 +52,7 @@ type UpdateOrderitemCommand struct {
 }
 
 // Validate validates the update command
-func (c *UpdateOrderitemCommand) Validate() error {
+func (c *UpdateOrderItemCommand) Validate() error {
 	if c.ID == uuid.Nil {
 		return ErrInvalidID
 	}
@@ -60,19 +60,19 @@ func (c *UpdateOrderitemCommand) Validate() error {
 }
 
 // ToEntity converts the command to an entity
-func (c *UpdateOrderitemCommand) ToEntity() *entity.Orderitem {
-	e := entity.NewOrderitem(c.OrderID, c.ProductID, c.Quantity, c.Price)
+func (c *UpdateOrderItemCommand) ToEntity() *entity.OrderItem {
+	e := entity.NewOrderItem(c.OrderID, c.ProductID, c.Quantity, c.Price)
 	e.ID = c.ID
 	return e
 }
 
-// DeleteOrderitemCommand represents the delete orderitem command
-type DeleteOrderitemCommand struct {
+// DeleteOrderItemCommand represents the delete orderItem command
+type DeleteOrderItemCommand struct {
 	ID uuid.UUID `json:"id" validate:"required"`
 }
 
 // Validate validates the delete command
-func (c *DeleteOrderitemCommand) Validate() error {
+func (c *DeleteOrderItemCommand) Validate() error {
 	if c.ID == uuid.Nil {
 		return ErrInvalidID
 	}

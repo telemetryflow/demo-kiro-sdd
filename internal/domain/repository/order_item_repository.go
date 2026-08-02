@@ -25,34 +25,34 @@ import (
 	"github.com/telemetryflow/order-service/internal/domain/entity"
 )
 
-// OrderitemRepository defines the repository interface for Orderitem
-type OrderitemRepository interface {
-	// Create creates a new orderitem
-	Create(ctx context.Context, e *entity.Orderitem) error
+// OrderItemRepository defines the repository interface for OrderItem
+type OrderItemRepository interface {
+	// Create creates a new orderItem
+	Create(ctx context.Context, e *entity.OrderItem) error
 
-	// FindByID finds a orderitem by ID
-	FindByID(ctx context.Context, id uuid.UUID) (*entity.Orderitem, error)
+	// FindByID finds a orderItem by ID
+	FindByID(ctx context.Context, id uuid.UUID) (*entity.OrderItem, error)
 
-	// FindAll finds all orderitems with pagination
-	FindAll(ctx context.Context, offset, limit int) ([]entity.Orderitem, int64, error)
+	// FindAll finds all orderItems with pagination
+	FindAll(ctx context.Context, offset, limit int) ([]entity.OrderItem, int64, error)
 
-	// Update updates an existing orderitem
-	Update(ctx context.Context, e *entity.Orderitem) error
+	// Update updates an existing orderItem
+	Update(ctx context.Context, e *entity.OrderItem) error
 
-	// Delete soft-deletes a orderitem by ID
+	// Delete soft-deletes a orderItem by ID
 	Delete(ctx context.Context, id uuid.UUID) error
 
-	// HardDelete permanently deletes a orderitem
+	// HardDelete permanently deletes a orderItem
 	HardDelete(ctx context.Context, id uuid.UUID) error
 
 	// FindByOrderID finds all items for an order
-	FindByOrderID(ctx context.Context, orderID uuid.UUID) ([]entity.Orderitem, error)
+	FindByOrderID(ctx context.Context, orderID uuid.UUID) ([]entity.OrderItem, error)
 
 	// FindByProductID finds all items for a product
-	FindByProductID(ctx context.Context, productID uuid.UUID) ([]entity.Orderitem, error)
+	FindByProductID(ctx context.Context, productID uuid.UUID) ([]entity.OrderItem, error)
 
-	// CreateBatch creates multiple orderitems in a single transaction
-	CreateBatch(ctx context.Context, items []entity.Orderitem) error
+	// CreateBatch creates multiple orderItems in a single transaction
+	CreateBatch(ctx context.Context, items []entity.OrderItem) error
 
 	// DeleteByOrderID deletes all items for an order
 	DeleteByOrderID(ctx context.Context, orderID uuid.UUID) error

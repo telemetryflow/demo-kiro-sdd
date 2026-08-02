@@ -28,7 +28,7 @@ type Order struct {
 	CustomerID uuid.UUID   `json:"customer_id" gorm:"type:uuid;not null;index"`
 	Total      float64     `json:"total" gorm:"type:decimal(15,2);not null;default:0"`
 	Status     string      `json:"status" gorm:"type:varchar(50);not null;default:'pending';index"`
-	Items      []Orderitem `json:"items,omitempty" gorm:"foreignKey:OrderID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Items      []OrderItem `json:"items,omitempty" gorm:"foreignKey:OrderID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 // TableName returns the table name for GORM

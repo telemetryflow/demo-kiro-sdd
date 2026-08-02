@@ -22,21 +22,21 @@ import (
 	"github.com/google/uuid"
 )
 
-// GetOrderitemByIDQuery represents the get orderitem by ID query
-type GetOrderitemByIDQuery struct {
+// GetOrderItemByIDQuery represents the get orderItem by ID query
+type GetOrderItemByIDQuery struct {
 	ID uuid.UUID `json:"id" validate:"required"`
 }
 
 // Validate validates the query
-func (q *GetOrderitemByIDQuery) Validate() error {
+func (q *GetOrderItemByIDQuery) Validate() error {
 	if q.ID == uuid.Nil {
 		return ErrInvalidID
 	}
 	return nil
 }
 
-// ListOrderitemsQuery represents the list orderitems query
-type ListOrderitemsQuery struct {
+// ListOrderItemsQuery represents the list orderItems query
+type ListOrderItemsQuery struct {
 	Page     int    `json:"page" query:"page"`
 	PageSize int    `json:"page_size" query:"page_size"`
 	SortBy   string `json:"sort_by" query:"sort_by"`
@@ -45,7 +45,7 @@ type ListOrderitemsQuery struct {
 }
 
 // Validate validates the query
-func (q *ListOrderitemsQuery) Validate() error {
+func (q *ListOrderItemsQuery) Validate() error {
 	if q.Page < 1 {
 		q.Page = 1
 	}
@@ -62,11 +62,11 @@ func (q *ListOrderitemsQuery) Validate() error {
 }
 
 // Offset returns the offset for pagination
-func (q *ListOrderitemsQuery) Offset() int {
+func (q *ListOrderItemsQuery) Offset() int {
 	return (q.Page - 1) * q.PageSize
 }
 
-// GetAllOrderItemsQuery represents the get all orderitems query with pagination
+// GetAllOrderItemsQuery represents the get all orderItems query with pagination
 type GetAllOrderItemsQuery struct {
 	Offset int `json:"offset" query:"offset"`
 	Limit  int `json:"limit" query:"limit"`
@@ -83,7 +83,7 @@ func (q *GetAllOrderItemsQuery) Validate() error {
 	return nil
 }
 
-// SearchOrderItemsQuery represents the search orderitems query
+// SearchOrderItemsQuery represents the search orderItems query
 type SearchOrderItemsQuery struct {
 	Query  string `json:"query" query:"query"`
 	Offset int    `json:"offset" query:"offset"`

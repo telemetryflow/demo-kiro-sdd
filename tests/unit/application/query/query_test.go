@@ -172,9 +172,9 @@ func TestSearchOrdersQuery(t *testing.T) {
 // Order Item Query Tests
 // =============================================================================
 
-func TestGetOrderitemByIDQuery(t *testing.T) {
+func TestGetOrderItemByIDQuery(t *testing.T) {
 	t.Run("should validate with valid ID", func(t *testing.T) {
-		q := &query.GetOrderitemByIDQuery{
+		q := &query.GetOrderItemByIDQuery{
 			ID: uuid.New(),
 		}
 		err := q.Validate()
@@ -182,7 +182,7 @@ func TestGetOrderitemByIDQuery(t *testing.T) {
 	})
 
 	t.Run("should fail validation with nil ID", func(t *testing.T) {
-		q := &query.GetOrderitemByIDQuery{
+		q := &query.GetOrderItemByIDQuery{
 			ID: uuid.Nil,
 		}
 		err := q.Validate()
@@ -233,9 +233,9 @@ func TestGetAllOrderItemsQuery(t *testing.T) {
 	})
 }
 
-func TestListOrderitemsQuery(t *testing.T) {
+func TestListOrderItemsQuery(t *testing.T) {
 	t.Run("should set default page for invalid page", func(t *testing.T) {
-		q := &query.ListOrderitemsQuery{
+		q := &query.ListOrderItemsQuery{
 			Page:     0,
 			PageSize: 10,
 		}
@@ -245,7 +245,7 @@ func TestListOrderitemsQuery(t *testing.T) {
 	})
 
 	t.Run("should set default page size for invalid size", func(t *testing.T) {
-		q := &query.ListOrderitemsQuery{
+		q := &query.ListOrderItemsQuery{
 			Page:     1,
 			PageSize: 0,
 		}
@@ -255,7 +255,7 @@ func TestListOrderitemsQuery(t *testing.T) {
 	})
 
 	t.Run("should calculate offset correctly", func(t *testing.T) {
-		q := &query.ListOrderitemsQuery{
+		q := &query.ListOrderItemsQuery{
 			Page:     3,
 			PageSize: 10,
 		}

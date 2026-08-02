@@ -27,40 +27,40 @@ import (
 	"github.com/telemetryflow/order-service/internal/domain/repository"
 )
 
-// OrderitemQueryHandler handles queries for Orderitem entity
-type OrderitemQueryHandler struct {
-	repo repository.OrderitemRepository
+// OrderItemQueryHandler handles queries for OrderItem entity
+type OrderItemQueryHandler struct {
+	repo repository.OrderItemRepository
 }
 
-// NewOrderitemQueryHandler creates a new Orderitem query handler
-func NewOrderitemQueryHandler(repo repository.OrderitemRepository) *OrderitemQueryHandler {
-	return &OrderitemQueryHandler{
+// NewOrderItemQueryHandler creates a new OrderItem query handler
+func NewOrderItemQueryHandler(repo repository.OrderItemRepository) *OrderItemQueryHandler {
+	return &OrderItemQueryHandler{
 		repo: repo,
 	}
 }
 
-// HandleOrderitemGetByID handles get orderitem by ID query
-func (h *OrderitemQueryHandler) HandleOrderitemGetByID(ctx context.Context, qry *query.GetOrderitemByIDQuery) (*dto.OrderitemResponse, error) {
+// HandleOrderItemGetByID handles get orderItem by ID query
+func (h *OrderItemQueryHandler) HandleOrderItemGetByID(ctx context.Context, qry *query.GetOrderItemByIDQuery) (*dto.OrderItemResponse, error) {
 	entity, err := h.repo.FindByID(ctx, qry.ID)
 	if err != nil {
 		return nil, err
 	}
-	return dto.OrderitemToResponse(entity), nil
+	return dto.OrderItemToResponse(entity), nil
 }
 
-// HandleOrderitemGetAll handles get all orderitems query
-func (h *OrderitemQueryHandler) HandleOrderitemGetAll(ctx context.Context, qry *query.GetAllOrderItemsQuery) (*dto.OrderitemListResponse, error) {
+// HandleOrderItemGetAll handles get all orderItems query
+func (h *OrderItemQueryHandler) HandleOrderItemGetAll(ctx context.Context, qry *query.GetAllOrderItemsQuery) (*dto.OrderItemListResponse, error) {
 	entities, total, err := h.repo.FindAll(ctx, qry.Offset, qry.Limit)
 	if err != nil {
 		return nil, err
 	}
 
-	responses := make([]*dto.OrderitemResponse, len(entities))
+	responses := make([]*dto.OrderItemResponse, len(entities))
 	for i := range entities {
-		responses[i] = dto.OrderitemToResponse(&entities[i])
+		responses[i] = dto.OrderItemToResponse(&entities[i])
 	}
 
-	return &dto.OrderitemListResponse{
+	return &dto.OrderItemListResponse{
 		Data:   responses,
 		Total:  int(total),
 		Offset: qry.Offset,
@@ -68,20 +68,20 @@ func (h *OrderitemQueryHandler) HandleOrderitemGetAll(ctx context.Context, qry *
 	}, nil
 }
 
-// HandleOrderitemGetByOrderID handles get all orderitems for a given order
+// HandleOrderItemGetByOrderID handles get all orderItems for a given order
 // (nested sub-resource: GET /orders/{order_id}/items).
-func (h *OrderitemQueryHandler) HandleOrderitemGetByOrderID(ctx context.Context, orderID uuid.UUID) (*dto.OrderitemListResponse, error) {
+func (h *OrderItemQueryHandler) HandleOrderItemGetByOrderID(ctx context.Context, orderID uuid.UUID) (*dto.OrderItemListResponse, error) {
 	entities, err := h.repo.FindByOrderID(ctx, orderID)
 	if err != nil {
 		return nil, err
 	}
 
-	responses := make([]*dto.OrderitemResponse, len(entities))
+	responses := make([]*dto.OrderItemResponse, len(entities))
 	for i := range entities {
-		responses[i] = dto.OrderitemToResponse(&entities[i])
+		responses[i] = dto.OrderItemToResponse(&entities[i])
 	}
 
-	return &dto.OrderitemListResponse{
+	return &dto.OrderItemListResponse{
 		Data:   responses,
 		Total:  len(entities),
 		Offset: 0,

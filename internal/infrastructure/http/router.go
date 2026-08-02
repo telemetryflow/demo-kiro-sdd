@@ -82,12 +82,12 @@ func (s *Server) setupRoutes() {
 	orderHandler.RegisterRoutes(v1Protected)
 
 	// Order Items (CRUD)
-	orderitemRepo := persistence.NewOrderitemRepository(s.db)
-	orderitemHandler := handler.NewOrderitemHandler(
-		apphandler.NewOrderitemCommandHandler(orderitemRepo),
-		apphandler.NewOrderitemQueryHandler(orderitemRepo),
+	orderItemRepo := persistence.NewOrderItemRepository(s.db)
+	orderItemHandler := handler.NewOrderItemHandler(
+		apphandler.NewOrderItemCommandHandler(orderItemRepo),
+		apphandler.NewOrderItemQueryHandler(orderItemRepo),
 	)
-	orderitemHandler.RegisterRoutes(v1Protected)
+	orderItemHandler.RegisterRoutes(v1Protected)
 
 }
 

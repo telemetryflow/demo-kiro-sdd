@@ -25,8 +25,8 @@ import (
 	"github.com/telemetryflow/order-service/internal/domain/entity"
 )
 
-// OrderitemResponse represents the orderitem API response
-type OrderitemResponse struct {
+// OrderItemResponse represents the orderItem API response
+type OrderItemResponse struct {
 	ID        uuid.UUID `json:"id"`
 	OrderID   uuid.UUID `json:"order_id"`
 	ProductID uuid.UUID `json:"product_id"`
@@ -36,9 +36,9 @@ type OrderitemResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// FromOrderitem converts entity to response DTO
-func FromOrderitem(e *entity.Orderitem) OrderitemResponse {
-	return OrderitemResponse{
+// FromOrderItem converts entity to response DTO
+func FromOrderItem(e *entity.OrderItem) OrderItemResponse {
+	return OrderItemResponse{
 		ID:        e.ID,
 		OrderID:   e.OrderID,
 		ProductID: e.ProductID,
@@ -49,45 +49,45 @@ func FromOrderitem(e *entity.Orderitem) OrderitemResponse {
 	}
 }
 
-// FromOrderitems converts entities to response DTOs
-func FromOrderitems(entities []entity.Orderitem) []OrderitemResponse {
-	responses := make([]OrderitemResponse, len(entities))
+// FromOrderItems converts entities to response DTOs
+func FromOrderItems(entities []entity.OrderItem) []OrderItemResponse {
+	responses := make([]OrderItemResponse, len(entities))
 	for i, e := range entities {
-		responses[i] = FromOrderitem(&e)
+		responses[i] = FromOrderItem(&e)
 	}
 	return responses
 }
 
-// CreateOrderitemRequest represents the create orderitem request.
+// CreateOrderItemRequest represents the create orderItem request.
 // order_id is NOT in the body — it comes from the URL path
 // (POST /orders/{order_id}/items).
-type CreateOrderitemRequest struct {
+type CreateOrderItemRequest struct {
 	ProductID uuid.UUID `json:"product_id" validate:"required"`
 	Quantity  int       `json:"quantity" validate:"required"`
 	Price     float64   `json:"price" validate:"required"`
 }
 
-// UpdateOrderitemRequest represents the update orderitem request.
+// UpdateOrderItemRequest represents the update orderItem request.
 // order_id is NOT in the body — it comes from the URL path
 // (PUT /orders/{order_id}/items/{id}).
-type UpdateOrderitemRequest struct {
+type UpdateOrderItemRequest struct {
 	ProductID uuid.UUID `json:"product_id" validate:"required"`
 	Quantity  int       `json:"quantity" validate:"required"`
 	Price     float64   `json:"price" validate:"required"`
 }
 
-// OrderitemToResponse converts entity pointer to response DTO pointer
-func OrderitemToResponse(e *entity.Orderitem) *OrderitemResponse {
+// OrderItemToResponse converts entity pointer to response DTO pointer
+func OrderItemToResponse(e *entity.OrderItem) *OrderItemResponse {
 	if e == nil {
 		return nil
 	}
-	resp := FromOrderitem(e)
+	resp := FromOrderItem(e)
 	return &resp
 }
 
-// OrderitemListResponse represents the list orderitem API response
-type OrderitemListResponse struct {
-	Data   []*OrderitemResponse `json:"data"`
+// OrderItemListResponse represents the list orderItem API response
+type OrderItemListResponse struct {
+	Data   []*OrderItemResponse `json:"data"`
 	Total  int                  `json:"total"`
 	Offset int                  `json:"offset"`
 	Limit  int                  `json:"limit"`
