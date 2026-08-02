@@ -150,6 +150,13 @@ services:
       - TELEMETRYFLOW_SERVICE_NAME=${TELEMETRYFLOW_SERVICE_NAME:-Order-Service}
       - TELEMETRYFLOW_SERVICE_VERSION=${TELEMETRYFLOW_SERVICE_VERSION:-1.4.4}
       - TELEMETRYFLOW_INSECURE=${TELEMETRYFLOW_INSECURE:-true}
+      # Standard OTLP env vars so the auto-configured OTel SDK routes ALL
+      # signals (incl. logs) to the local collector. The TFO SDK uses
+      # TELEMETRYFLOW_ENDPOINT for traces/metrics; these cover the log signal.
+      - OTEL_EXPORTER_OTLP_ENDPOINT=tfo-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_SERVICE_NAME=${TELEMETRYFLOW_SERVICE_NAME:-Order-Service}
 
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-info}

@@ -26,6 +26,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/telemetryflow/order-service/internal/domain/entity"
 	"github.com/telemetryflow/order-service/internal/infrastructure/config"
 	"github.com/telemetryflow/order-service/internal/infrastructure/http"
 	"github.com/telemetryflow/order-service/internal/infrastructure/persistence"
@@ -59,6 +60,14 @@ func main() {
 			log.Printf("Failed to close database connection: %v", err)
 		}
 	}()
+
+	// Auto-migrate ensures the orders and order_items tables exist (self-healing
+	// when the DB is reset). GORM only creates missing tables/columns/indexes;
+	// it never drops data. Disable for environments that manage schema externally.
+	if err := persistence.AutoMigrate(db, &entity.Order{}, &entity.OrderItem{}); err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+	log.Println("Database schema verified (orders, order_items)")
 
 	// Create HTTP server
 	server := http.NewServer(cfg, db)

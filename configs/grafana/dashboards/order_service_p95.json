@@ -1,22 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus",
-      "description": "Prometheus datasource for metrics and recording rules",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    },
-    {
-      "name": "DS_TRACES",
-      "label": "Traces",
-      "description": "Trace datasource for exemplar drill-down (Jaeger or Tempo)",
-      "type": "datasource",
-      "pluginId": "jaeger",
-      "pluginName": "Jaeger"
-    }
-  ],
   "__elements": {},
   "__requires": [
     {
@@ -65,7 +47,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "description": "P95 request duration computed from the recording rule with exemplar overlay from the raw histogram. Click an exemplar dot to navigate to the trace.",
       "fieldConfig": {
@@ -108,8 +90,8 @@
           "links": [
             {
               "datasource": {
-                "type": "${DS_TRACES}",
-                "uid": "${DS_TRACES}"
+                "type": "jaeger",
+                "uid": "jaeger"
               },
               "field": "trace_id",
               "internal": true,
@@ -165,24 +147,72 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "order_service:http_request_duration_p95:5m{http_route=\"$http_route\"}",
+          "expr": "histogram_quantile(0.50, sum(rate(traces_duration_milliseconds_bucket{http_route=\"$http_route\"}[$__rate_interval])) by (le))",
           "format": "time_series",
           "interval": "",
-          "legendFormat": "P95 {{http_method}} {{http_route}}",
+          "legendFormat": "P50",
           "range": true,
-          "refId": "A"
+          "refId": "P50"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "histogram_quantile(0.75, sum(rate(traces_duration_milliseconds_bucket{http_route=\"$http_route\"}[$__rate_interval])) by (le))",
+          "format": "time_series",
+          "interval": "",
+          "legendFormat": "P75",
+          "range": true,
+          "refId": "P75"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "histogram_quantile(0.90, sum(rate(traces_duration_milliseconds_bucket{http_route=\"$http_route\"}[$__rate_interval])) by (le))",
+          "format": "time_series",
+          "interval": "",
+          "legendFormat": "P90",
+          "range": true,
+          "refId": "P90"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "histogram_quantile(0.95, sum(rate(traces_duration_milliseconds_bucket{http_route=\"$http_route\"}[$__rate_interval])) by (le))",
+          "format": "time_series",
+          "interval": "",
+          "legendFormat": "P95",
+          "range": true,
+          "refId": "P95"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "histogram_quantile(0.99, sum(rate(traces_duration_milliseconds_bucket{http_route=\"$http_route\"}[$__rate_interval])) by (le))",
+          "format": "time_series",
+          "interval": "",
+          "legendFormat": "P99",
+          "range": true,
+          "refId": "P99"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "sum(rate(traces_duration_milliseconds_sum{http_route=\"$http_route\"}[$__rate_interval])) / sum(rate(traces_duration_milliseconds_count{http_route=\"$http_route\"}[$__rate_interval]))",
+          "format": "time_series",
+          "interval": "",
+          "legendFormat": "AVG",
+          "range": true,
+          "refId": "AVG"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "editorMode": "code",
           "exemplar": true,
           "expr": "traces_duration_milliseconds_bucket{http_route=\"$http_route\"}",
@@ -191,10 +221,10 @@
           "interval": "",
           "legendFormat": "",
           "range": true,
-          "refId": "B"
+          "refId": "exemplars"
         }
       ],
-      "title": "P95 Request Duration",
+      "title": "Request Latency \u2014 P50 / P75 / P90 / P95 / P99 + Avg",
       "type": "timeseries"
     }
   ],
@@ -209,34 +239,6 @@
   "templating": {
     "list": [
       {
-        "current": {},
-        "hide": 0,
-        "includeAll": false,
-        "label": "Prometheus",
-        "multi": false,
-        "name": "DS_PROMETHEUS",
-        "options": [],
-        "query": "prometheus",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource"
-      },
-      {
-        "current": {},
-        "hide": 0,
-        "includeAll": false,
-        "label": "Traces",
-        "multi": false,
-        "name": "DS_TRACES",
-        "options": [],
-        "query": "jaeger",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource"
-      },
-      {
         "current": {
           "selected": true,
           "text": "/api/v1/orders",
@@ -244,7 +246,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "prometheus"
         },
         "definition": "label_values(traces_duration_milliseconds_bucket, http_route)",
         "hide": 0,
@@ -273,6 +275,6 @@
   "timezone": "browser",
   "title": "Order Service - P95 Latency",
   "uid": "order-service-p95",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
