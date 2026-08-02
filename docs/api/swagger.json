@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Order Service API",
-    "description": "Order Service - RESTful API with DDD + CQRS Pattern\n\nThis API provides endpoints for managing orders and order items with full observability support (traces, metrics, logs).\n\n## Architecture\nThis API follows Domain-Driven Design (DDD) with CQRS pattern.\n\n## Authentication\nAPI uses JWT Bearer token authentication. Include the token in the Authorization header:\n```\nAuthorization: Bearer <token>\n```",
+    "description": "Order Service - RESTful API with DDD + CQRS Pattern\n\nThis API provides endpoints for managing orders and order items with full observability support (traces, metrics, logs).\n\n## Architecture\nThis API follows Domain-Driven Design (DDD) with CQRS pattern.\n\n## Authentication\nAPI uses JWT Bearer token authentication. Include the token in the Authorization header:\n```\nAuthorization: Bearer <token>\n```\n",
     "version": "1.4.4",
     "contact": {
       "name": "API Support",
@@ -44,7 +44,9 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Health check",
         "description": "Check if the service is healthy",
         "operationId": "health",
@@ -65,7 +67,9 @@
     },
     "/ready": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Readiness check",
         "description": "Check if the service is ready to accept requests",
         "operationId": "ready",
@@ -86,9 +90,11 @@
     },
     "/api/v1/auth/token": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Generate access token",
-        "description": "Generate a JWT access token for authenticating with protected endpoints. This is a public endpoint — no authentication required.",
+        "description": "Generate a JWT access token for authenticating with protected endpoints.\nThis is a public endpoint \u2014 no authentication required.\n",
         "operationId": "createToken",
         "security": [],
         "requestBody": {
@@ -120,7 +126,9 @@
     },
     "/api/v1/orders": {
       "get": {
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "summary": "List orders",
         "description": "Get a paginated list of all orders",
         "operationId": "listOrders",
@@ -167,7 +175,9 @@
         }
       },
       "post": {
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "summary": "Create order",
         "description": "Create a new order",
         "operationId": "createOrder",
@@ -206,7 +216,9 @@
     },
     "/api/v1/orders/{id}": {
       "get": {
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "summary": "Get order by ID",
         "description": "Get a specific order by its ID",
         "operationId": "getOrderById",
@@ -245,7 +257,9 @@
         }
       },
       "put": {
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "summary": "Update order",
         "description": "Update an existing order",
         "operationId": "updateOrder",
@@ -297,7 +311,9 @@
         }
       },
       "delete": {
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "summary": "Delete order",
         "description": "Delete an order",
         "operationId": "deleteOrder",
@@ -329,38 +345,22 @@
         }
       }
     },
-    "/api/v1/order-items": {
+    "/api/v1/orders/{order_id}/items": {
       "get": {
-        "tags": ["Order Items"],
-        "summary": "List order items",
-        "description": "Get a paginated list of all order items",
+        "tags": [
+          "Order Items"
+        ],
+        "summary": "List order items for an order",
+        "description": "Get all items belonging to a specific order (nested sub-resource).",
         "operationId": "listOrderItems",
         "parameters": [
           {
-            "name": "limit",
-            "in": "query",
-            "description": "Number of items to return",
-            "schema": {
-              "type": "integer",
-              "default": 10,
-              "minimum": 1,
-              "maximum": 100
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "description": "Number of items to skip",
-            "schema": {
-              "type": "integer",
-              "default": 0,
-              "minimum": 0
-            }
+            "$ref": "#/components/parameters/OrderIDPath"
           }
         ],
         "responses": {
           "200": {
-            "description": "List of order items",
+            "description": "List of order items for the order",
             "content": {
               "application/json": {
                 "schema": {
@@ -368,6 +368,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -378,10 +381,17 @@
         }
       },
       "post": {
-        "tags": ["Order Items"],
-        "summary": "Create order item",
-        "description": "Create a new order item",
+        "tags": [
+          "Order Items"
+        ],
+        "summary": "Create an order item",
+        "description": "Add a new item to an order. The order_id is taken from the URL path, not the request body.",
         "operationId": "createOrderItem",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderIDPath"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -415,22 +425,20 @@
         }
       }
     },
-    "/api/v1/order-items/{id}": {
+    "/api/v1/orders/{order_id}/items/{id}": {
       "get": {
-        "tags": ["Order Items"],
+        "tags": [
+          "Order Items"
+        ],
         "summary": "Get order item by ID",
-        "description": "Get a specific order item by its ID",
+        "description": "Get a specific item within an order. Returns 404 if the item does not belong to the order.",
         "operationId": "getOrderItemById",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Order Item ID (UUID)",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "$ref": "#/components/parameters/OrderIDPath"
+          },
+          {
+            "$ref": "#/components/parameters/OrderItemIDPath"
           }
         ],
         "responses": {
@@ -456,20 +464,18 @@
         }
       },
       "put": {
-        "tags": ["Order Items"],
+        "tags": [
+          "Order Items"
+        ],
         "summary": "Update order item",
-        "description": "Update an existing order item",
+        "description": "Update an item within an order. The order_id is taken from the URL path, not the request body.",
         "operationId": "updateOrderItem",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Order Item ID (UUID)",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "$ref": "#/components/parameters/OrderIDPath"
+          },
+          {
+            "$ref": "#/components/parameters/OrderItemIDPath"
           }
         ],
         "requestBody": {
@@ -508,20 +514,18 @@
         }
       },
       "delete": {
-        "tags": ["Order Items"],
+        "tags": [
+          "Order Items"
+        ],
         "summary": "Delete order item",
-        "description": "Delete an order item",
+        "description": "Delete an item from an order. Returns 404 if the item does not belong to the order.",
         "operationId": "deleteOrderItem",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "Order Item ID (UUID)",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "$ref": "#/components/parameters/OrderIDPath"
+          },
+          {
+            "$ref": "#/components/parameters/OrderItemIDPath"
           }
         ],
         "responses": {
@@ -533,6 +537,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -562,7 +569,10 @@
       },
       "TokenRequest": {
         "type": "object",
-        "required": ["email", "role"],
+        "required": [
+          "email",
+          "role"
+        ],
         "properties": {
           "email": {
             "type": "string",
@@ -572,7 +582,11 @@
           },
           "role": {
             "type": "string",
-            "enum": ["admin", "user", "viewer"],
+            "enum": [
+              "admin",
+              "user",
+              "viewer"
+            ],
             "description": "User role for authorization",
             "example": "admin"
           }
@@ -729,7 +743,11 @@
       },
       "CreateOrderRequest": {
         "type": "object",
-        "required": ["customer_id", "total", "status"],
+        "required": [
+          "customer_id",
+          "total",
+          "status"
+        ],
         "properties": {
           "customer_id": {
             "type": "string",
@@ -743,14 +761,22 @@
           },
           "status": {
             "type": "string",
-            "enum": ["pending", "confirmed", "processing"],
+            "enum": [
+              "pending",
+              "confirmed",
+              "processing"
+            ],
             "example": "pending"
           }
         }
       },
       "UpdateOrderRequest": {
         "type": "object",
-        "required": ["customer_id", "total", "status"],
+        "required": [
+          "customer_id",
+          "total",
+          "status"
+        ],
         "properties": {
           "customer_id": {
             "type": "string",
@@ -840,12 +866,13 @@
       },
       "CreateOrderItemRequest": {
         "type": "object",
-        "required": ["order_id", "product_id", "quantity", "price"],
+        "description": "Create order item body. The order_id is provided in the URL path, not the body.",
+        "required": [
+          "product_id",
+          "quantity",
+          "price"
+        ],
         "properties": {
-          "order_id": {
-            "type": "string",
-            "format": "uuid"
-          },
           "product_id": {
             "type": "string",
             "format": "uuid"
@@ -864,12 +891,13 @@
       },
       "UpdateOrderItemRequest": {
         "type": "object",
-        "required": ["order_id", "product_id", "quantity", "price"],
+        "description": "Update order item body. The order_id is provided in the URL path, not the body.",
+        "required": [
+          "product_id",
+          "quantity",
+          "price"
+        ],
         "properties": {
-          "order_id": {
-            "type": "string",
-            "format": "uuid"
-          },
           "product_id": {
             "type": "string",
             "format": "uuid"
@@ -982,6 +1010,28 @@
         "scheme": "bearer",
         "bearerFormat": "JWT",
         "description": "Enter your JWT token"
+      }
+    },
+    "parameters": {
+      "OrderIDPath": {
+        "name": "order_id",
+        "in": "path",
+        "required": true,
+        "description": "Order ID (UUID) \u2014 the parent order of the item(s)",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "OrderItemIDPath": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Order Item ID (UUID)",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
       }
     }
   },

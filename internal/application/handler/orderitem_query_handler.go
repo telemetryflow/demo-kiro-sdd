@@ -21,6 +21,7 @@ package handler
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/telemetryflow/order-service/internal/application/dto"
 	"github.com/telemetryflow/order-service/internal/application/query"
 	"github.com/telemetryflow/order-service/internal/domain/repository"
@@ -64,5 +65,26 @@ func (h *OrderitemQueryHandler) HandleOrderitemGetAll(ctx context.Context, qry *
 		Total:  int(total),
 		Offset: qry.Offset,
 		Limit:  qry.Limit,
+	}, nil
+}
+
+// HandleOrderitemGetByOrderID handles get all orderitems for a given order
+// (nested sub-resource: GET /orders/{order_id}/items).
+func (h *OrderitemQueryHandler) HandleOrderitemGetByOrderID(ctx context.Context, orderID uuid.UUID) (*dto.OrderitemListResponse, error) {
+	entities, err := h.repo.FindByOrderID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	responses := make([]*dto.OrderitemResponse, len(entities))
+	for i := range entities {
+		responses[i] = dto.OrderitemToResponse(&entities[i])
+	}
+
+	return &dto.OrderitemListResponse{
+		Data:   responses,
+		Total:  len(entities),
+		Offset: 0,
+		Limit:  len(entities),
 	}, nil
 }

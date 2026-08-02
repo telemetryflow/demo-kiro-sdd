@@ -211,7 +211,7 @@ func TestOrderAPIEndpoints(t *testing.T) {
 }
 
 // =============================================================================
-// Order Items API Endpoint Tests (kebab-case: /order-items)
+// Order Items API Endpoint Tests (nested sub-resource: /orders/{order_id}/items)
 // =============================================================================
 
 func TestOrderItemsAPIEndpoints(t *testing.T) {
@@ -219,52 +219,61 @@ func TestOrderItemsAPIEndpoints(t *testing.T) {
 
 	e := echo.New()
 
-	// In-memory storage for testing
-	orderItems := make(map[string]map[string]interface{})
+	// In-memory storage keyed by order_id -> {item_id -> item}
+	itemsByOrder := make(map[string]map[string]interface{})
 
-	// Setup order-items endpoints with correct kebab-case naming
+	// Fixed parent order for these tests
+	parentOrderID := uuid.New().String()
+
+	// Setup nested order-items endpoints: /orders/:order_id/items[/:id]
 	api := e.Group("/api/v1")
 
-	// POST /order-items - Create order item
-	api.POST("/order-items", func(c echo.Context) error {
+	// POST /orders/:order_id/items - Create order item (order_id from path)
+	api.POST("/orders/:order_id/items", func(c echo.Context) error {
+		orderID := c.Param("order_id")
 		var item map[string]interface{}
 		if err := c.Bind(&item); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 		}
 		id := uuid.New().String()
 		item["id"] = id
-		orderItems[id] = item
+		item["order_id"] = orderID
+		if _, ok := itemsByOrder[orderID]; !ok {
+			itemsByOrder[orderID] = make(map[string]interface{})
+		}
+		itemsByOrder[orderID][id] = item
 		return c.JSON(http.StatusCreated, item)
 	})
 
-	// GET /order-items - List order items
-	api.GET("/order-items", func(c echo.Context) error {
-		data := make([]interface{}, 0, len(orderItems))
-		for _, item := range orderItems {
+	// GET /orders/:order_id/items - List items in an order
+	api.GET("/orders/:order_id/items", func(c echo.Context) error {
+		orderID := c.Param("order_id")
+		data := make([]interface{}, 0)
+		for _, item := range itemsByOrder[orderID] {
 			data = append(data, item)
 		}
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"data":   data,
-			"total":  len(orderItems),
-			"offset": 0,
-			"limit":  10,
+			"data":  data,
+			"total": len(data),
 		})
 	})
 
-	// GET /order-items/:id - Get order item by ID
-	api.GET("/order-items/:id", func(c echo.Context) error {
+	// GET /orders/:order_id/items/:id - Get one item (ownership-checked)
+	api.GET("/orders/:order_id/items/:id", func(c echo.Context) error {
+		orderID := c.Param("order_id")
 		id := c.Param("id")
-		item, exists := orderItems[id]
+		item, exists := itemsByOrder[orderID][id]
 		if !exists {
 			return echo.NewHTTPError(http.StatusNotFound, "Order item not found")
 		}
 		return c.JSON(http.StatusOK, item)
 	})
 
-	// PUT /order-items/:id - Update order item
-	api.PUT("/order-items/:id", func(c echo.Context) error {
+	// PUT /orders/:order_id/items/:id - Update item
+	api.PUT("/orders/:order_id/items/:id", func(c echo.Context) error {
+		orderID := c.Param("order_id")
 		id := c.Param("id")
-		if _, exists := orderItems[id]; !exists {
+		if _, exists := itemsByOrder[orderID][id]; !exists {
 			return echo.NewHTTPError(http.StatusNotFound, "Order item not found")
 		}
 		var item map[string]interface{}
@@ -272,32 +281,33 @@ func TestOrderItemsAPIEndpoints(t *testing.T) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 		}
 		item["id"] = id
-		orderItems[id] = item
+		item["order_id"] = orderID
+		itemsByOrder[orderID][id] = item
 		return c.JSON(http.StatusOK, item)
 	})
 
-	// DELETE /order-items/:id - Delete order item
-	api.DELETE("/order-items/:id", func(c echo.Context) error {
+	// DELETE /orders/:order_id/items/:id - Remove item
+	api.DELETE("/orders/:order_id/items/:id", func(c echo.Context) error {
+		orderID := c.Param("order_id")
 		id := c.Param("id")
-		if _, exists := orderItems[id]; !exists {
+		if _, exists := itemsByOrder[orderID][id]; !exists {
 			return echo.NewHTTPError(http.StatusNotFound, "Order item not found")
 		}
-		delete(orderItems, id)
+		delete(itemsByOrder[orderID], id)
 		return c.NoContent(http.StatusNoContent)
 	})
 
 	var createdItemID string
 
-	t.Run("POST /order-items - should create order item", func(t *testing.T) {
+	t.Run("POST /orders/{order_id}/items - should create order item", func(t *testing.T) {
 		body := map[string]interface{}{
-			"order_id":   uuid.New().String(),
 			"product_id": uuid.New().String(),
 			"quantity":   2,
 			"price":      29.99,
 		}
 		jsonBody, _ := json.Marshal(body)
 
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/order-items", bytes.NewBuffer(jsonBody))
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/orders/"+parentOrderID+"/items", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		rec := httptest.NewRecorder()
 
@@ -309,11 +319,12 @@ func TestOrderItemsAPIEndpoints(t *testing.T) {
 		err := json.Unmarshal(rec.Body.Bytes(), &response)
 		require.NoError(t, err)
 		assert.NotEmpty(t, response["id"])
+		assert.Equal(t, parentOrderID, response["order_id"], "order_id must come from the URL path")
 		createdItemID = response["id"].(string)
 	})
 
-	t.Run("GET /order-items - should list order items", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/v1/order-items", nil)
+	t.Run("GET /orders/{order_id}/items - should list order items", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/orders/"+parentOrderID+"/items", nil)
 		rec := httptest.NewRecorder()
 
 		e.ServeHTTP(rec, req)
@@ -327,10 +338,10 @@ func TestOrderItemsAPIEndpoints(t *testing.T) {
 		assert.Contains(t, response, "total")
 	})
 
-	t.Run("GET /order-items/:id - should get order item by ID", func(t *testing.T) {
+	t.Run("GET /orders/{order_id}/items/{id} - should get order item by ID", func(t *testing.T) {
 		require.NotEmpty(t, createdItemID)
 
-		req := httptest.NewRequest(http.MethodGet, "/api/v1/order-items/"+createdItemID, nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/orders/"+parentOrderID+"/items/"+createdItemID, nil)
 		rec := httptest.NewRecorder()
 
 		e.ServeHTTP(rec, req)
@@ -343,18 +354,29 @@ func TestOrderItemsAPIEndpoints(t *testing.T) {
 		assert.Equal(t, createdItemID, response["id"])
 	})
 
-	t.Run("PUT /order-items/:id - should update order item", func(t *testing.T) {
+	t.Run("GET wrong order_id should 404 (ownership)", func(t *testing.T) {
+		require.NotEmpty(t, createdItemID)
+		otherOrder := uuid.New().String()
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/orders/"+otherOrder+"/items/"+createdItemID, nil)
+		rec := httptest.NewRecorder()
+
+		e.ServeHTTP(rec, req)
+
+		assert.Equal(t, http.StatusNotFound, rec.Code, "item must not be reachable from another order")
+	})
+
+	t.Run("PUT /orders/{order_id}/items/{id} - should update order item", func(t *testing.T) {
 		require.NotEmpty(t, createdItemID)
 
 		body := map[string]interface{}{
-			"order_id":   uuid.New().String(),
 			"product_id": uuid.New().String(),
 			"quantity":   5,
 			"price":      24.99,
 		}
 		jsonBody, _ := json.Marshal(body)
 
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/order-items/"+createdItemID, bytes.NewBuffer(jsonBody))
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/orders/"+parentOrderID+"/items/"+createdItemID, bytes.NewBuffer(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		rec := httptest.NewRecorder()
 
@@ -368,10 +390,10 @@ func TestOrderItemsAPIEndpoints(t *testing.T) {
 		assert.Equal(t, float64(5), response["quantity"])
 	})
 
-	t.Run("DELETE /order-items/:id - should delete order item", func(t *testing.T) {
+	t.Run("DELETE /orders/{order_id}/items/{id} - should delete order item", func(t *testing.T) {
 		require.NotEmpty(t, createdItemID)
 
-		req := httptest.NewRequest(http.MethodDelete, "/api/v1/order-items/"+createdItemID, nil)
+		req := httptest.NewRequest(http.MethodDelete, "/api/v1/orders/"+parentOrderID+"/items/"+createdItemID, nil)
 		rec := httptest.NewRecorder()
 
 		e.ServeHTTP(rec, req)
@@ -379,10 +401,10 @@ func TestOrderItemsAPIEndpoints(t *testing.T) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 	})
 
-	t.Run("GET /order-items/:id - should return 404 for deleted item", func(t *testing.T) {
+	t.Run("GET /orders/{order_id}/items/{id} - should return 404 for deleted item", func(t *testing.T) {
 		require.NotEmpty(t, createdItemID)
 
-		req := httptest.NewRequest(http.MethodGet, "/api/v1/order-items/"+createdItemID, nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/orders/"+parentOrderID+"/items/"+createdItemID, nil)
 		rec := httptest.NewRecorder()
 
 		e.ServeHTTP(rec, req)
@@ -405,12 +427,12 @@ func TestAPINamingConventions(t *testing.T) {
 		assert.NotContains(t, expectedPath, "order/")
 	})
 
-	t.Run("order-items endpoints should use kebab-case", func(t *testing.T) {
-		// Verify the endpoint path uses kebab-case for multi-word resources
-		expectedPath := "/api/v1/order-items"
-		assert.Contains(t, expectedPath, "order-items")
-		assert.NotContains(t, expectedPath, "orderitems")
-		assert.NotContains(t, expectedPath, "order_items")
+	t.Run("order-items are a nested sub-resource of orders", func(t *testing.T) {
+		// Items live under their parent order: /orders/{order_id}/items
+		expectedPath := "/api/v1/orders/{order_id}/items"
+		assert.Contains(t, expectedPath, "/orders/")
+		assert.Contains(t, expectedPath, "/items")
+		assert.NotContains(t, expectedPath, "order-items", "items are nested under orders, not a flat top-level resource")
 	})
 
 	t.Run("JSON response fields should use snake_case", func(t *testing.T) {

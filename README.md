@@ -289,20 +289,20 @@ This generates:
 
 ### API Endpoints
 
-| Method | Endpoint                 | Description                        |
-| ------ | ------------------------ | ---------------------------------- |
-| GET    | `/health`                | Health check                       |
-| POST   | `/api/v1/auth/token`     | Generate JWT access token (public) |
-| GET    | `/api/v1/orders`         | List all orders                    |
-| POST   | `/api/v1/orders`         | Create order                       |
-| GET    | `/api/v1/orders/:id`     | Get order by ID                    |
-| PUT    | `/api/v1/orders/:id`     | Update order                       |
-| DELETE | `/api/v1/orders/:id`     | Delete order                       |
-| GET    | `/api/v1/orderitems`     | List all order items               |
-| POST   | `/api/v1/orderitems`     | Create order item                  |
-| GET    | `/api/v1/orderitems/:id` | Get order item by ID               |
-| PUT    | `/api/v1/orderitems/:id` | Update order item                  |
-| DELETE | `/api/v1/orderitems/:id` | Delete order item                  |
+| Method | Endpoint                                       | Description                          |
+| ------ | ---------------------------------------------- | ------------------------------------ |
+| GET    | `/health`                                      | Health check                         |
+| POST   | `/api/v1/auth/token`                           | Generate JWT access token (public)   |
+| GET    | `/api/v1/orders`                               | List all orders                      |
+| POST   | `/api/v1/orders`                               | Create order                         |
+| GET    | `/api/v1/orders/:id`                           | Get order by ID                      |
+| PUT    | `/api/v1/orders/:id`                           | Update order                         |
+| DELETE | `/api/v1/orders/:id`                           | Delete order                         |
+| GET    | `/api/v1/orders/:order_id/items`               | List items in an order               |
+| POST   | `/api/v1/orders/:order_id/items`               | Add an item to an order              |
+| GET    | `/api/v1/orders/:order_id/items/:id`           | Get an item within an order          |
+| PUT    | `/api/v1/orders/:order_id/items/:id`           | Update an item within an order       |
+| DELETE | `/api/v1/orders/:order_id/items/:id`           | Remove an item from an order         |
 
 ## Configuration
 

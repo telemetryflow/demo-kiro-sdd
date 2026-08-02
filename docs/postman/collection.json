@@ -383,14 +383,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"order_id\": \"{{orderId}}\",\n    \"product_id\": \"{{$randomUUID}}\",\n    \"quantity\": 2,\n    \"price\": 49.99\n}"
+              "raw": "{\n    \"product_id\": \"{{$randomUUID}}\",\n    \"quantity\": 2,\n    \"price\": 49.99\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/order-items",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}/items",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "order-items"]
+              "path": ["api", "{{apiVersion}}", "orders", "{{orderId}}", "items"]
             },
-            "description": "Create a new order item"
+            "description": "Add a new item to an order. order_id is taken from the URL path."
           },
           "response": [],
           "event": [
@@ -421,21 +421,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/order-items?limit=10&offset=0",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}/items",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "order-items"],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "offset",
-                  "value": "0"
-                }
-              ]
+              "path": ["api", "{{apiVersion}}", "orders", "{{orderId}}", "items"]
             },
-            "description": "List all order items with pagination"
+            "description": "List all items in an order"
           },
           "response": [],
           "event": [
@@ -471,11 +461,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/order-items/{{orderItemId}}",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}/items/{{orderItemId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "order-items", "{{orderItemId}}"]
+              "path": ["api", "{{apiVersion}}", "orders", "{{orderId}}", "items", "{{orderItemId}}"]
             },
-            "description": "Get a specific order item by ID"
+            "description": "Get a specific item within an order"
           },
           "response": [],
           "event": [
@@ -515,14 +505,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"order_id\": \"{{orderId}}\",\n    \"product_id\": \"{{$randomUUID}}\",\n    \"quantity\": 5,\n    \"price\": 39.99\n}"
+              "raw": "{\n    \"product_id\": \"{{$randomUUID}}\",\n    \"quantity\": 5,\n    \"price\": 39.99\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/order-items/{{orderItemId}}",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}/items/{{orderItemId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "order-items", "{{orderItemId}}"]
+              "path": ["api", "{{apiVersion}}", "orders", "{{orderId}}", "items", "{{orderItemId}}"]
             },
-            "description": "Update an existing order item"
+            "description": "Update an item within an order. order_id is taken from the URL path."
           },
           "response": [],
           "event": [
@@ -553,11 +543,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/order-items/{{orderItemId}}",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}/items/{{orderItemId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "order-items", "{{orderItemId}}"]
+              "path": ["api", "{{apiVersion}}", "orders", "{{orderId}}", "items", "{{orderItemId}}"]
             },
-            "description": "Delete an order item"
+            "description": "Remove an item from an order"
           },
           "response": [],
           "event": [

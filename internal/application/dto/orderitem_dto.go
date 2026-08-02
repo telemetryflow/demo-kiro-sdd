@@ -58,17 +58,19 @@ func FromOrderitems(entities []entity.Orderitem) []OrderitemResponse {
 	return responses
 }
 
-// CreateOrderitemRequest represents the create orderitem request
+// CreateOrderitemRequest represents the create orderitem request.
+// order_id is NOT in the body — it comes from the URL path
+// (POST /orders/{order_id}/items).
 type CreateOrderitemRequest struct {
-	OrderID   uuid.UUID `json:"order_id" validate:"required"`
 	ProductID uuid.UUID `json:"product_id" validate:"required"`
 	Quantity  int       `json:"quantity" validate:"required"`
 	Price     float64   `json:"price" validate:"required"`
 }
 
-// UpdateOrderitemRequest represents the update orderitem request
+// UpdateOrderitemRequest represents the update orderitem request.
+// order_id is NOT in the body — it comes from the URL path
+// (PUT /orders/{order_id}/items/{id}).
 type UpdateOrderitemRequest struct {
-	OrderID   uuid.UUID `json:"order_id" validate:"required"`
 	ProductID uuid.UUID `json:"product_id" validate:"required"`
 	Quantity  int       `json:"quantity" validate:"required"`
 	Price     float64   `json:"price" validate:"required"`

@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Postman Collection**: Replaced legacy "Login" request with "Generate Token" pointing to correct endpoint
 - **Postman Environment**: Replaced `testUserEmail`/`testUserPassword` with `tokenEmail`/`tokenRole` variables
 - **Docker Compose Docs**: Added rebuild command (`--build api`) to wiki and README
+- **Order Items API (Breaking)**: Restructured order items from a flat top-level resource (`/api/v1/order-items`) to a nested sub-resource of orders (`/api/v1/orders/{order_id}/items[/{id}]`). `order_id` is now taken from the URL path instead of the request body; get/update/delete verify item ownership (404 if the item does not belong to the order). Updated OpenAPI spec, swagger.json, Postman collection, README, wiki, and integration tests to match. (Version held at 1.4.4 per request; note this is a breaking route change.)
 - **Cache Store**: Replaced Redis with Valkey (`valkey/valkey:8-alpine`), a Redis-compatible drop-in. Service renamed `tfo-demo-redis` → `tfo-demo-valkey`; the `tfo-backend` image still receives `REDIS_*` env-var keys (app contract) sourced from `VALKEY_*` values
 - **Container Versions**: Bumped all third-party images to current latest
   - postgres `16-alpine` → `18-alpine`

@@ -244,36 +244,24 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api/v1/order-items:
+  /api/v1/orders/{order_id}/items:
     get:
       tags:
         - Order Items
-      summary: List order items
-      description: Get a paginated list of all order items
+      summary: List order items for an order
+      description: Get all items belonging to a specific order (nested sub-resource).
       operationId: listOrderItems
       parameters:
-        - name: limit
-          in: query
-          description: Number of items to return
-          schema:
-            type: integer
-            default: 10
-            minimum: 1
-            maximum: 100
-        - name: offset
-          in: query
-          description: Number of items to skip
-          schema:
-            type: integer
-            default: 0
-            minimum: 0
+        - $ref: "#/components/parameters/OrderIDPath"
       responses:
         "200":
-          description: List of order items
+          description: List of order items for the order
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/OrderItemListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
@@ -281,9 +269,11 @@ paths:
     post:
       tags:
         - Order Items
-      summary: Create order item
-      description: Create a new order item
+      summary: Create an order item
+      description: Add a new item to an order. The order_id is taken from the URL path, not the request body.
       operationId: createOrderItem
+      parameters:
+        - $ref: "#/components/parameters/OrderIDPath"
       requestBody:
         required: true
         content:
@@ -304,21 +294,16 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api/v1/order-items/{id}:
+  /api/v1/orders/{order_id}/items/{id}:
     get:
       tags:
         - Order Items
       summary: Get order item by ID
-      description: Get a specific order item by its ID
+      description: Get a specific item within an order. Returns 404 if the item does not belong to the order.
       operationId: getOrderItemById
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: Order Item ID (UUID)
-          schema:
-            type: string
-            format: uuid
+        - $ref: "#/components/parameters/OrderIDPath"
+        - $ref: "#/components/parameters/OrderItemIDPath"
       responses:
         "200":
           description: Order item details
@@ -336,16 +321,11 @@ paths:
       tags:
         - Order Items
       summary: Update order item
-      description: Update an existing order item
+      description: Update an item within an order. The order_id is taken from the URL path, not the request body.
       operationId: updateOrderItem
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: Order Item ID (UUID)
-          schema:
-            type: string
-            format: uuid
+        - $ref: "#/components/parameters/OrderIDPath"
+        - $ref: "#/components/parameters/OrderItemIDPath"
       requestBody:
         required: true
         content:
@@ -371,16 +351,11 @@ paths:
       tags:
         - Order Items
       summary: Delete order item
-      description: Delete an order item
+      description: Delete an item from an order. Returns 404 if the item does not belong to the order.
       operationId: deleteOrderItem
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: Order Item ID (UUID)
-          schema:
-            type: string
-            format: uuid
+        - $ref: "#/components/parameters/OrderIDPath"
+        - $ref: "#/components/parameters/OrderItemIDPath"
       responses:
         "204":
           description: Order item deleted
@@ -388,6 +363,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -636,15 +613,12 @@ components:
 
     CreateOrderItemRequest:
       type: object
+      description: Create order item body. The order_id is provided in the URL path, not the body.
       required:
-        - order_id
         - product_id
         - quantity
         - price
       properties:
-        order_id:
-          type: string
-          format: uuid
         product_id:
           type: string
           format: uuid
@@ -659,15 +633,12 @@ components:
 
     UpdateOrderItemRequest:
       type: object
+      description: Update order item body. The order_id is provided in the URL path, not the body.
       required:
-        - order_id
         - product_id
         - quantity
         - price
       properties:
-        order_id:
-          type: string
-          format: uuid
         product_id:
           type: string
           format: uuid
@@ -749,6 +720,24 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: Enter your JWT token
+
+  parameters:
+    OrderIDPath:
+      name: order_id
+      in: path
+      required: true
+      description: Order ID (UUID) — the parent order of the item(s)
+      schema:
+        type: string
+        format: uuid
+    OrderItemIDPath:
+      name: id
+      in: path
+      required: true
+      description: Order Item ID (UUID)
+      schema:
+        type: string
+        format: uuid
 
 security:
   - bearerAuth: []

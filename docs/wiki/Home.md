@@ -38,20 +38,20 @@ Welcome to the **Order Service** technical documentation. This wiki provides com
 
 ### API Endpoints
 
-| Method   | Path                       | Description             |
-| -------- | -------------------------- | ----------------------- |
-| `GET`    | `/health`                  | Health check            |
-| `GET`    | `/ready`                   | Readiness check         |
-| `GET`    | `/api/v1/orders`           | List orders (paginated) |
-| `POST`   | `/api/v1/orders`           | Create order            |
-| `GET`    | `/api/v1/orders/{id}`      | Get order by ID         |
-| `PUT`    | `/api/v1/orders/{id}`      | Update order            |
-| `DELETE` | `/api/v1/orders/{id}`      | Delete order            |
-| `GET`    | `/api/v1/order-items`      | List order items        |
-| `POST`   | `/api/v1/order-items`      | Create order item       |
-| `GET`    | `/api/v1/order-items/{id}` | Get order item by ID    |
-| `PUT`    | `/api/v1/order-items/{id}` | Update order item       |
-| `DELETE` | `/api/v1/order-items/{id}` | Delete order item       |
+| Method   | Path                                  | Description                       |
+| -------- | ------------------------------------- | --------------------------------- |
+| `GET`    | `/health`                             | Health check                      |
+| `GET`    | `/ready`                              | Readiness check                   |
+| `GET`    | `/api/v1/orders`                      | List orders (paginated)           |
+| `POST`   | `/api/v1/orders`                      | Create order                      |
+| `GET`    | `/api/v1/orders/{id}`                 | Get order by ID                   |
+| `PUT`    | `/api/v1/orders/{id}`                 | Update order                      |
+| `DELETE` | `/api/v1/orders/{id}`                 | Delete order                      |
+| `GET`    | `/api/v1/orders/{order_id}/items`     | List items in an order            |
+| `POST`   | `/api/v1/orders/{order_id}/items`     | Add an item to an order           |
+| `GET`    | `/api/v1/orders/{order_id}/items/{id}` | Get an item within an order      |
+| `PUT`    | `/api/v1/orders/{order_id}/items/{id}` | Update an item within an order   |
+| `DELETE` | `/api/v1/orders/{order_id}/items/{id}` | Remove an item from an order     |
 
 Full OpenAPI specification: [`docs/api/openapi.yaml`](../api/openapi.yaml)
 
