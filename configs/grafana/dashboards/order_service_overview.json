@@ -12,588 +12,377 @@
       }
     ]
   },
-  "description": "Unified observability for Order Service. Correlates metrics (Prometheus/span_metrics), traces (Jaeger via exemplars), and logs (Loki via traceId) on a single view. Click an exemplar dot to open the trace; click a log's traceId to jump to Jaeger.",
+  "description": "Industrial-grade observability for Order Service. Covers the four golden signals + RED + USE (DB saturation) + status-code analysis + payload throughput + service dependencies, all correlated to traces (Jaeger exemplars) and logs (Loki traceId).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
   "links": [
-    {
-      "title": "Jaeger UI",
-      "type": "link",
-      "url": "/api/datasources/proxy/uid/jaeger/"
-    },
-    {
-      "title": "Prometheus",
-      "type": "link",
-      "url": "/api/datasources/proxy/uid/prometheus/"
-    }
+    { "title": "Jaeger UI", "type": "link", "url": "/api/datasources/proxy/uid/jaeger/" },
+    { "title": "Prometheus", "type": "link", "url": "/api/datasources/proxy/uid/prometheus/" },
+    { "title": "Loki", "type": "link", "url": "/api/datasources/proxy/uid/loki/" }
   ],
   "liveNow": true,
   "panels": [
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
-      "id": 100,
-      "title": "Service Health (RED)",
-      "type": "row"
-    },
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 200, "title": "Golden Signals & RED", "type": "row" },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Total inbound request rate (RPS) from span_metrics SERVER spans. Exemplars link each sample to its trace.",
+      "description": "Total inbound request rate (req/s) from otelecho server spans.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 1 },
-              { "color": "green", "value": 5 }
-            ]
-          },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 1 }, { "color": "green", "value": 5 } ] },
           "unit": "reqps",
-          "links": [
-            {
-              "title": "View Trace in Jaeger",
-              "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}",
-              "internal": false
-            }
-          ]
+          "links": [ { "title": "View Trace in Jaeger", "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}", "internal": false } ]
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
-      "id": 1,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "textMode": "value_and_name"
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(rate(traces_calls_total{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\"}[$__rate_interval]))",
-          "format": "time_series",
-          "legendFormat": "RPS",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Request Rate",
-      "type": "stat"
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 }, "id": 1,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "textMode": "value_and_name" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service_name\"}[$__rate_interval]))", "format": "time_series", "legendFormat": "RPS", "range": true, "refId": "A" } ],
+      "title": "Request Rate", "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Percentage of server spans ending in error status. Exemplars link to the failing trace.",
+      "description": "Share of server spans returning 5xx. Primary availability signal.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 1 },
-              { "color": "red", "value": 5 }
-            ]
-          },
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "links": [
-            {
-              "title": "View Failing Trace in Jaeger",
-              "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}",
-              "internal": false
-            }
-          ],
-          "noValue": "0"
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 } ] },
+          "unit": "percent", "min": 0, "max": 100, "noValue": "0",
+          "links": [ { "title": "View Failing Trace in Jaeger", "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}", "internal": false } ]
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
-      "id": 2,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "textMode": "value_and_name"
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "100 * sum(rate(traces_calls_total{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval])) / clamp_min(sum(rate(traces_calls_total{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\"}[$__rate_interval])), 1)",
-          "format": "time_series",
-          "legendFormat": "Error %",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Error Rate",
-      "type": "stat"
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 }, "id": 2,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "textMode": "value_and_name" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "100 * sum(rate(http_server_request_duration_seconds_count{service_name=\"$service_name\",http_response_status_code=~\"5..\"}[$__rate_interval])) / clamp_min(sum(rate(http_server_request_duration_seconds_count{service_name=\"$service_name\"}[$__rate_interval])), 1)", "format": "time_series", "legendFormat": "Err %", "range": true, "refId": "A" } ],
+      "title": "Error Rate (5xx)", "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "P95 server-span duration (ms). Hover a point to reveal exemplar dots that link to the slow trace in Jaeger.",
+      "description": "P95 / P99 server-span latency. Hover for exemplar dots \u2192 trace.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 300 },
-              { "color": "red", "value": 500 }
-            ]
-          },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 300 }, { "color": "red", "value": 500 } ] },
           "unit": "ms",
-          "links": [
-            {
-              "title": "View Trace in Jaeger",
-              "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}",
-              "internal": false
-            }
-          ]
+          "links": [ { "title": "View Trace in Jaeger", "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}", "internal": false } ]
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
-      "id": 3,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "textMode": "value_and_name"
-      },
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 }, "id": 3,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "textMode": "value_and_name" },
       "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum(rate(traces_duration_milliseconds_bucket{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\"}[$__rate_interval])) by (le))",
-          "format": "time_series",
-          "legendFormat": "p95",
-          "range": true,
-          "refId": "A"
-        }
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "1000 * histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket{service_name=\"$service_name\"}[$__rate_interval])) by (le))", "format": "time_series", "legendFormat": "p95", "range": true, "refId": "p95" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "1000 * histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{service_name=\"$service_name\"}[$__rate_interval])) by (le))", "format": "time_series", "legendFormat": "p99", "range": true, "refId": "p99", "hide": false }
       ],
-      "title": "P95 Latency",
-      "type": "stat"
+      "title": "Latency P95 / P99", "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Number of distinct HTTP routes observed for this service.",
+      "description": "DB connection pool utilization (in_use / max_open). Saturation signal (USE method).",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "blue", "value": null }]
-          },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 60 }, { "color": "red", "value": 80 } ] },
+          "unit": "percent", "min": 0, "max": 100, "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 }, "id": 4,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "textMode": "value_and_name", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "100 * sum(go_sql_connections_in_use{service_name=\"$service_name\"}) / clamp_min(sum(go_sql_connections_max_open{service_name=\"$service_name\"}), 1)", "format": "time_series", "legendFormat": "pool", "refId": "A" } ],
+      "title": "DB Pool Saturation", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Total requests observed since service start (cumulative).",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] },
+          "unit": "short", "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 1 }, "id": 5,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "sum(http_server_request_duration_seconds_count{service_name=\"$service_name\"})", "format": "time_series", "instant": true, "refId": "A" } ],
+      "title": "Total Requests", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Distinct HTTP routes instrumented for this service.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "purple", "value": null } ] },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "textMode": "value"
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "expr": "count(count by (http_route) (traces_calls_total{service_name=\"$service_name\"}))",
-          "format": "time_series",
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Active Routes",
-      "type": "stat"
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 1 }, "id": 6,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "textMode": "value" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "count(count by (http_route) (traces_calls_total{service_name=\"$service_name\"}))", "format": "time_series", "instant": true, "refId": "A" } ],
+      "title": "Active Routes", "type": "stat"
     },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
-      "id": 101,
-      "title": "Throughput & Errors  (click exemplar dots \u2192 trace)",
-      "type": "row"
-    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 }, "id": 201, "title": "Traffic & Status Codes", "type": "row" },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Request rate per HTTP route. Enable exemplars in the time range; each dot is a real trace you can open in Jaeger.",
+      "description": "Request rate per HTTP route (spanmetrics). Exemplar dots link to the trace.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2,
-            "pointSize": 6,
-            "showPoints": "auto",
-            "lineInterpolation": "smooth",
-            "spanNulls": false
-          },
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "pointSize": 6, "showPoints": "auto", "lineInterpolation": "smooth", "spanNulls": false },
           "unit": "reqps",
-          "links": [
-            {
-              "title": "View Trace in Jaeger",
-              "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}",
-              "internal": false
-            }
-          ]
+          "links": [ { "title": "View Trace in Jaeger", "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}", "internal": false } ]
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
-      "id": 10,
-      "options": {
-        "legend": { "calcs": ["lastNotNull", "mean"], "displayMode": "table", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(rate(traces_calls_total{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$http_route\"}[$__rate_interval])) by (http_route)",
-          "format": "time_series",
-          "legendFormat": "{{http_route}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Request Rate by Route",
-      "type": "timeseries"
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 }, "id": 10,
+      "options": { "legend": { "calcs": ["lastNotNull", "mean"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "sum(rate(traces_calls_total{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$http_route\"}[$__rate_interval])) by (http_route)", "format": "time_series", "legendFormat": "{{http_route}}", "range": true, "refId": "A" } ],
+      "title": "Request Rate by Route", "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Error rate per route. Exemplars link to the specific failing trace.",
+      "description": "Requests per second grouped by HTTP status class (2xx/3xx/4xx/5xx). Stacked \u2014 watch the red 5xx band for incidents.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "lineWidth": 2,
-            "pointSize": 6,
-            "showPoints": "auto",
-            "lineInterpolation": "smooth",
-            "spanNulls": false
-          },
-          "unit": "percent",
-          "min": 0,
-          "links": [
-            {
-              "title": "View Failing Trace in Jaeger",
-              "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}",
-              "internal": false
-            }
-          ],
-          "noValue": "0"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
-      "id": 11,
-      "options": {
-        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "100 * sum(rate(traces_calls_total{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", status_code=\"STATUS_CODE_ERROR\", http_route=~\"$http_route\"}[$__rate_interval])) by (http_route) / clamp_min(sum(rate(traces_calls_total{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$http_route\"}[$__rate_interval])) by (http_route), 1)",
-          "format": "time_series",
-          "legendFormat": "{{http_route}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Error Rate by Route",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
-      "id": 102,
-      "title": "Latency Profile  (exemplars \u2192 trace)",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "P50 / P95 / P99 server-span duration for the selected route. Exemplar dots link to the underlying trace.",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "lineInterpolation": "smooth",
-            "spanNulls": false
-          },
-          "unit": "ms",
-          "axisLabel": "Duration",
-          "links": [
-            {
-              "title": "View Trace in Jaeger",
-              "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}",
-              "internal": false
-            }
-          ]
+          "custom": { "drawStyle": "line", "fillOpacity": 30, "stacking": { "mode": "normal", "group": "A" }, "lineWidth": 1, "pointSize": 5, "showPoints": "never", "lineInterpolation": "linear", "spanNulls": false },
+          "unit": "reqps",
+          "links": [ { "title": "View Trace in Jaeger", "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}", "internal": false } ]
         },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "p99" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] },
-          { "matcher": { "id": "byName", "options": "p95" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }] },
-          { "matcher": { "id": "byName", "options": "p50" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] }
+          { "matcher": { "id": "byName", "options": "2xx" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] },
+          { "matcher": { "id": "byName", "options": "3xx" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } } ] },
+          { "matcher": { "id": "byName", "options": "4xx" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } } ] },
+          { "matcher": { "id": "byName", "options": "5xx" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] }
         ]
       },
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 16 },
-      "id": 20,
-      "options": {
-        "legend": { "calcs": ["lastNotNull", "max", "mean"], "displayMode": "table", "placement": "right" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 }, "id": 11,
+      "options": { "legend": { "calcs": ["lastNotNull", "mean"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "histogram_quantile(0.50, sum(rate(traces_duration_milliseconds_bucket{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$http_route\"}[$__rate_interval])) by (le, http_route))",
-          "format": "time_series",
-          "legendFormat": "p50 {{http_route}}",
-          "range": true,
-          "refId": "p50"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum(rate(traces_duration_milliseconds_bucket{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$http_route\"}[$__rate_interval])) by (le, http_route))",
-          "format": "time_series",
-          "legendFormat": "p95 {{http_route}}",
-          "range": true,
-          "refId": "p95"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "histogram_quantile(0.99, sum(rate(traces_duration_milliseconds_bucket{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$http_route\"}[$__rate_interval])) by (le, http_route))",
-          "format": "time_series",
-          "legendFormat": "p99 {{http_route}}",
-          "range": true,
-          "refId": "p99"
-        }
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service_name\", http_response_status_code=~\"2..\"}[$__rate_interval]))", "format": "time_series", "legendFormat": "2xx", "range": true, "refId": "2xx" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service_name\", http_response_status_code=~\"3..\"}[$__rate_interval]))", "format": "time_series", "legendFormat": "3xx", "range": true, "refId": "3xx" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service_name\", http_response_status_code=~\"4..\"}[$__rate_interval]))", "format": "time_series", "legendFormat": "4xx", "range": true, "refId": "4xx" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service_name\", http_response_status_code=~\"5..\"}[$__rate_interval]))", "format": "time_series", "legendFormat": "5xx", "range": true, "refId": "5xx" }
       ],
-      "title": "Latency Percentiles by Route",
-      "type": "timeseries"
+      "title": "Status Code Distribution", "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 }, "id": 202, "title": "Latency Profile  (exemplars \u2192 trace)", "type": "row" },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "P50 / P95 / P99 server-span latency per selected route. Exemplar dots link to the trace.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "auto", "lineInterpolation": "smooth", "spanNulls": false },
+          "unit": "ms",
+          "links": [ { "title": "View Trace in Jaeger", "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}", "internal": false } ]
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "p99" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] },
+          { "matcher": { "id": "byName", "options": "p95" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } } ] },
+          { "matcher": { "id": "byName", "options": "p50" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] }
+        ]
+      },
+      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 16 }, "id": 20,
+      "options": { "legend": { "calcs": ["lastNotNull", "max", "mean"], "displayMode": "table", "placement": "right" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "histogram_quantile(0.50, sum(rate(traces_duration_milliseconds_bucket{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$http_route\"}[$__rate_interval])) by (le, http_route))", "format": "time_series", "legendFormat": "p50 {{http_route}}", "range": true, "refId": "p50" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "histogram_quantile(0.95, sum(rate(traces_duration_milliseconds_bucket{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$http_route\"}[$__rate_interval])) by (le, http_route))", "format": "time_series", "legendFormat": "p95 {{http_route}}", "range": true, "refId": "p95" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "histogram_quantile(0.99, sum(rate(traces_duration_milliseconds_bucket{service_name=\"$service_name\", span_kind=\"SPAN_KIND_SERVER\", http_route=~\"$http_route\"}[$__rate_interval])) by (le, http_route))", "format": "time_series", "legendFormat": "p99 {{http_route}}", "range": true, "refId": "p99" }
+      ],
+      "title": "Latency Percentiles by Route", "type": "timeseries"
     },
     {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
-      "id": 103,
-      "title": "Slow Spans & Dependencies",
-      "type": "row"
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Latency heatmap from the HTTP server duration histogram. Each row is a bucket bound; color intensity = request volume at that latency.",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "scheme", "scheme": "Spectral", "reverse": true, "fill": "dark-orange" }, "custom": { "fillOpacity": 70 }, "unit": "s" },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 16 }, "id": 21,
+      "options": { "calculate": false, "cellGap": 1, "cellValues": {}, "color": { "mode": "scheme", "scheme": "Spectral", "reverse": true, "fill": "dark-orange" }, "rowsFrame": { "layout": "auto" }, "yAxis": { "axisPlacement": "left", "unit": "s", "decimals": 3 } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "sum(rate(http_server_request_duration_seconds_bucket{service_name=\"$service_name\"}[$__rate_interval])) by (le)", "format": "time_series", "legendFormat": "{{le}}", "range": true, "refId": "A", "dataParser": "flant" } ],
+      "title": "Latency Heatmap", "type": "heatmap"
     },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 }, "id": 203, "title": "Payload & Throughput", "type": "row" },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Response payload size percentiles (bytes) \u2014 useful to spot heavy responses.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "auto", "lineInterpolation": "smooth", "spanNulls": false },
+          "unit": "bytes",
+          "links": [ { "title": "View Trace in Jaeger", "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}", "internal": false } ]
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 }, "id": 22,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "histogram_quantile(0.50, sum(rate(http_server_response_body_size_bytes_bucket{service_name=\"$service_name\"}[$__rate_interval])) by (le))", "format": "time_series", "legendFormat": "p50", "range": true, "refId": "p50" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "histogram_quantile(0.95, sum(rate(http_server_response_body_size_bytes_bucket{service_name=\"$service_name\"}[$__rate_interval])) by (le))", "format": "time_series", "legendFormat": "p95", "range": true, "refId": "p95" }
+      ],
+      "title": "Response Size Percentiles", "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Request payload size percentiles (bytes) \u2014 detect oversized inbound payloads.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "auto", "lineInterpolation": "smooth", "spanNulls": false },
+          "unit": "bytes",
+          "links": [ { "title": "View Trace in Jaeger", "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}", "internal": false } ]
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 }, "id": 23,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "histogram_quantile(0.50, sum(rate(http_server_request_body_size_bytes_bucket{service_name=\"$service_name\"}[$__rate_interval])) by (le))", "format": "time_series", "legendFormat": "p50", "range": true, "refId": "p50" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "histogram_quantile(0.99, sum(rate(http_server_request_body_size_bytes_bucket{service_name=\"$service_name\"}[$__rate_interval])) by (le))", "format": "time_series", "legendFormat": "p99", "range": true, "refId": "p99" }
+      ],
+      "title": "Request Size Percentiles", "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 }, "id": 204, "title": "Database Connection Pool (USE \u2014 Saturation)", "type": "row" },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Active (in_use) vs idle connections over time. If in_use approaches max_open, the pool is saturated.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 20, "stacking": { "mode": "normal", "group": "A" }, "lineWidth": 1, "pointSize": 5, "showPoints": "never", "lineInterpolation": "linear", "spanNulls": false },
+          "unit": "short"
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "in_use" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] },
+          { "matcher": { "id": "byName", "options": "idle" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 35 }, "id": 30,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "sum(go_sql_connections_in_use{service_name=\"$service_name\"})", "format": "time_series", "legendFormat": "in_use", "refId": "in_use" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "sum(go_sql_connections_idle{service_name=\"$service_name\"})", "format": "time_series", "legendFormat": "idle", "refId": "idle" }
+      ],
+      "title": "Connections In-Use vs Idle", "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Pool capacity utilization (%) and connection-wait events. Rising waits signal pool exhaustion.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": [ { "axisLabel": "", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "auto", "lineInterpolation": "smooth", "spanNulls": false } ],
+          "unit": "percent"
+        },
+        "overrides": [
+          { "matcher": { "id": "byRegexp", "options": "/wait.*/" }, "properties": [ { "id": "unit", "value": "short" }, { "id": "custom.axisPlacement", "value": "right" }, { "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } } ] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 35 }, "id": 31,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "100 * sum(go_sql_connections_in_use{service_name=\"$service_name\"}) / clamp_min(sum(go_sql_connections_max_open{service_name=\"$service_name\"}), 1)", "format": "time_series", "legendFormat": "utilization %", "refId": "util" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "sum(rate(go_sql_connections_wait_count_total{service_name=\"$service_name\"}[$__rate_interval]))", "format": "time_series", "legendFormat": "waits/s", "refId": "waits" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "sum(rate(go_sql_connections_wait_duration_nanoseconds_total{service_name=\"$service_name\"}[$__rate_interval])) / 1e9", "format": "time_series", "legendFormat": "wait s/s", "refId": "waitdur" }
+      ],
+      "title": "Pool Utilization & Wait Events", "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 }, "id": 205, "title": "Slow Spans & Dependencies", "type": "row" },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "description": "Slowest spans (P95 per span name). Click a row's exemplar to inspect the trace.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 300 },
-              { "color": "red", "value": 500 }
-            ]
-          },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 300 }, { "color": "red", "value": 500 } ] },
           "unit": "ms",
-          "links": [
-            {
-              "title": "View Trace in Jaeger",
-              "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}",
-              "internal": false
-            }
-          ]
+          "links": [ { "title": "View Trace in Jaeger", "url": "/api/datasources/proxy/uid/jaeger/trace/${__value.trace.raw}", "internal": false } ]
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
-      "id": 30,
-      "options": {
-        "showHeader": true,
-        "sortBy": [{ "displayName": "Value", "desc": true }]
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "topk(10, histogram_quantile(0.95, sum(rate(traces_duration_milliseconds_bucket{service_name=\"$service_name\"}[$__rate_interval])) by (le, span_name)))",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "{{span_name}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Top 10 Slowest Spans (P95)",
-      "type": "table",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": { "Time": true },
-            "renameByName": { "Value": "p95 (ms)", "span_name": "Span" }
-          }
-        }
-      ]
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 }, "id": 40,
+      "options": { "showHeader": true, "sortBy": [ { "displayName": "p95 (ms)", "desc": true } ] },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "exemplar": true, "expr": "topk(10, histogram_quantile(0.95, sum(rate(traces_duration_milliseconds_bucket{service_name=\"$service_name\"}[$__rate_interval])) by (le, span_name)))", "format": "table", "instant": true, "legendFormat": "{{span_name}}", "refId": "A" } ],
+      "title": "Top 10 Slowest Spans (P95)", "type": "table",
+      "transformations": [ { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "Value": "p95 (ms)", "span_name": "Span" } } } ]
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "description": "Service dependency graph derived from traces (service_graph connector). Edge width = request volume, red = errors.",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
-      "id": 31,
-      "options": {},
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "expr": "sum(rate(traces_service_graph_request_total{client=\"$service_name\"}[$__rate_interval])) by (client, server)",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "{{client}} \u2192 {{server}}",
-          "refId": "edges"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "editorMode": "code",
-          "expr": "sum(rate(traces_service_graph_request_failed_total{client=\"$service_name\"}[$__rate_interval])) by (client, server)",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "errors {{client}} \u2192 {{server}}",
-          "refId": "errors",
-          "hide": false
-        }
-      ],
-      "title": "Service Dependencies (from traces)",
-      "type": "nodeGraph"
+      "description": "Service dependency graph from the service_graph connector. client/server are renamed to source/target so Grafana treats the frame as edges and auto-derives nodes.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 }, "id": 41,
+      "options": { "nodes": {}, "edges": {}, "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "sum(traces_service_graph_request_total) by (client, server)", "format": "table", "instant": true, "legendFormat": "{{client}} \u2192 {{server}}", "refId": "edges" } ],
+      "title": "Service Dependencies (graph)", "type": "nodeGraph",
+      "transformations": [ { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "client": "source", "server": "target", "Value": "mainStat" } } } ]
     },
     {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 },
-      "id": 104,
-      "title": "Correlated Logs  (click traceId \u2192 Jaeger)",
-      "type": "row"
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Tabular dependency view: total requests and P95 server-side latency per client\u2192server edge.",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 52 }, "id": 42,
+      "options": { "showHeader": true, "sortBy": [ { "displayName": "requests", "desc": true } ] },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "sum(traces_service_graph_request_total) by (client, server)", "format": "table", "instant": true, "refId": "total" },
+        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "editorMode": "code", "expr": "1000 * histogram_quantile(0.95, sum(traces_service_graph_request_server_seconds_bucket) by (le, client, server))", "format": "table", "instant": true, "refId": "p95" }
+      ],
+      "title": "Service Dependencies (rate & latency)", "type": "table",
+      "transformations": [
+        { "id": "joinByField", "options": { "byField": "server", "mode": "outer" } },
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "Time 1": true, "Time 2": true, "client 1": true, "client 2": true }, "renameByName": { "client": "Client", "server": "Server", "Value": "requests", "Value 1": "p95 (ms)" } } }
+      ]
     },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 59 }, "id": 206, "title": "Correlated Logs  (click traceId \u2192 Jaeger)", "type": "row" },
     {
       "datasource": { "type": "loki", "uid": "loki" },
-      "description": "Live application logs for the selected service. Each line carries traceId (structured metadata); the View in Jaeger link jumps to the matching trace. Filter narrows to the chosen route/error keyword.",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 35 },
-      "id": 40,
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": false,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      },
-      "targets": [
-        {
-          "datasource": { "type": "loki", "uid": "loki" },
-          "editorMode": "builder",
-          "expr": "{service_name=\"$service_name\"} | json | line_format \"{{.level}} {{.msg}}\"",
-          "query": "{service_name=\"$service_name\"} | json",
-          "refId": "A"
-        }
-      ],
-      "title": "Application Logs (trace-correlated)",
-      "type": "logs"
+      "description": "Live application logs for the selected service. Each line carries traceId (structured metadata); the View in Jaeger link jumps to the matching trace.",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 60 }, "id": 50,
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": false, "showCommonLabels": false, "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false },
+      "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "builder", "expr": "{service_name=\"$service_name\"} | json", "query": "{service_name=\"$service_name\"} | json", "refId": "A" } ],
+      "title": "Application Logs (trace-correlated)", "type": "logs"
     },
     {
       "datasource": { "type": "loki", "uid": "loki" },
       "description": "Error-level logs only. These are the lines most likely to need a trace investigation \u2014 click traceId to open Jaeger.",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
-      "id": 41,
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": false,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      },
-      "targets": [
-        {
-          "datasource": { "type": "loki", "uid": "loki" },
-          "editorMode": "builder",
-          "expr": "{service_name=\"$service_name\"} | json | level=~\"error|ERROR|fatal|FATAL\"",
-          "query": "{service_name=\"$service_name\"} | level=~\"(?i)error|fatal\"",
-          "refId": "A"
-        }
-      ],
-      "title": "Error Logs",
-      "type": "logs"
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 69 }, "id": 51,
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": false, "showCommonLabels": false, "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false },
+      "targets": [ { "datasource": { "type": "loki", "uid": "loki" }, "editorMode": "builder", "expr": "{service_name=\"$service_name\"} | json | level=~\"error|ERROR|fatal|FATAL\"", "query": "{service_name=\"$service_name\"} | level=~\"(?i)error|fatal\"", "refId": "A" } ],
+      "title": "Error Logs", "type": "logs"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 39,
-  "tags": ["order-service", "observability", "metrics", "logs", "traces", "correlation", "opentelemetry"],
+  "tags": ["order-service", "observability", "metrics", "logs", "traces", "correlation", "opentelemetry", "sre", "golden-signals"],
   "templating": {
     "list": [
       {
         "current": { "selected": false, "text": "Order-Service", "value": "Order-Service" },
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "definition": "label_values(traces_calls_total, service_name)",
-        "hide": 0,
-        "includeAll": false,
-        "label": "Service",
-        "multi": false,
-        "name": "service_name",
-        "options": [],
-        "query": { "query": "label_values(traces_calls_total, service_name)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
+        "definition": "label_values(http_server_request_duration_seconds_count, service_name)",
+        "hide": 0, "includeAll": false, "label": "Service", "multi": false, "name": "service_name", "options": [],
+        "query": { "query": "label_values(http_server_request_duration_seconds_count, service_name)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "refresh": 2, "regex": "", "skipUrlSync": false, "sort": 1, "type": "query"
       },
       {
         "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "prometheus" },
         "definition": "label_values(traces_calls_total{service_name=\"$service_name\"}, http_route)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "HTTP Route",
-        "multi": true,
-        "name": "http_route",
-        "options": [],
+        "hide": 0, "includeAll": true, "label": "HTTP Route", "multi": true, "name": "http_route", "options": [],
         "query": { "query": "label_values(traces_calls_total{service_name=\"$service_name\"}, http_route)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
+        "refresh": 2, "regex": "", "skipUrlSync": false, "sort": 1, "type": "query"
       }
     ]
   },
@@ -602,6 +391,6 @@
   "timezone": "browser",
   "title": "Order Service - Observability Overview (Metrics + Logs + Traces)",
   "uid": "order-service-overview",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }

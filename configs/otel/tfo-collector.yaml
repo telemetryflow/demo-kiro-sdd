@@ -301,7 +301,11 @@ exporters:
   # This is the bridge that makes metrics → traces drill-down possible in Grafana.
   prometheus:
     endpoint: "0.0.0.0:8889"
-    send_timestamps: true
+    # send_timestamps: false lets Prometheus stamp each scrape (every 10s) so
+    # rate()/increase() get enough samples. With send_timestamps=true, connector-
+    # derived metrics (span_metrics, service_graph) carry stale flush timestamps
+    # and Prometheus marks them stale, breaking rate().
+    send_timestamps: false
     metric_expiration: 5m
     resource_to_telemetry_conversion:
       enabled: true
