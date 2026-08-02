@@ -341,13 +341,13 @@ func TestCreateOrder(t *testing.T) {
 
 ### Test Organization
 
-| Directory                          | Scope                       | Requires Infrastructure |
-| ---------------------------------- | --------------------------- | ----------------------- |
-| `tests/unit/`                      | Pure logic, no I/O          | No                      |
-| `tests/integration/`              | Database, HTTP, Prometheus  | Yes (Docker)            |
-| `tests/e2e/`                       | Full API workflows          | Yes (full stack)        |
-| `tests/unit/observability/`       | Prometheus rule validation  | No (reads YAML files)   |
-| `tests/integration/observability/` | Live Prometheus queries     | Yes (monitoring stack)  |
+| Directory                          | Scope                      | Requires Infrastructure |
+| ---------------------------------- | -------------------------- | ----------------------- |
+| `tests/unit/`                      | Pure logic, no I/O         | No                      |
+| `tests/integration/`               | Database, HTTP, Prometheus | Yes (Docker)            |
+| `tests/e2e/`                       | Full API workflows         | Yes (full stack)        |
+| `tests/unit/observability/`        | Prometheus rule validation | No (reads YAML files)   |
+| `tests/integration/observability/` | Live Prometheus queries    | Yes (monitoring stack)  |
 
 ## Submitting Changes
 
@@ -408,16 +408,16 @@ docs(wiki): update observability page
 
 ### Naming Conventions
 
-| Type        | Convention   | Example                              |
-| ----------- | ------------ | ------------------------------------ |
-| Packages    | lowercase    | `handler`, `middleware`, `config`    |
-| Interfaces  | -er suffix   | `OrderRepository`, `Logger`          |
-| Structs     | PascalCase   | `OrderHandler`, `JWTClaims`          |
-| Functions   | PascalCase   | `NewOrderHandler`, `CreateToken`     |
-| Variables   | camelCase    | `orderID`, `httpClient`              |
-| Constants   | PascalCase   | `DefaultTimeout`, `MaxRetries`       |
-| Files       | snake_case   | `order_handler.go`, `auth_test.go`   |
-| Test files  | _test suffix | `order_handler_test.go`              |
+| Type       | Convention    | Example                            |
+| ---------- | ------------- | ---------------------------------- |
+| Packages   | lowercase     | `handler`, `middleware`, `config`  |
+| Interfaces | -er suffix    | `OrderRepository`, `Logger`        |
+| Structs    | PascalCase    | `OrderHandler`, `JWTClaims`        |
+| Functions  | PascalCase    | `NewOrderHandler`, `CreateToken`   |
+| Variables  | camelCase     | `orderID`, `httpClient`            |
+| Constants  | PascalCase    | `DefaultTimeout`, `MaxRetries`     |
+| Files      | snake_case    | `order_handler.go`, `auth_test.go` |
+| Test files | \_test suffix | `order_handler_test.go`            |
 
 ### Error Handling
 

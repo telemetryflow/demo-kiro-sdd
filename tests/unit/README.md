@@ -59,7 +59,7 @@ graph TB
         end
     end
 
-    E --> |"Tests"| DE[Base, Order, Orderitem]
+    E --> |"Tests"| DE[Base, Order, OrderItem]
     C --> |"Tests"| DC[Create, Update, Delete Commands]
     Q --> |"Tests"| DQ[GetByID, GetAll, Search Queries]
     H --> |"Tests"| DH[Command & Query Handlers]
@@ -132,7 +132,7 @@ Tests are organized by DDD architectural layers with granular subdirectories:
 tests/unit/
 ├── domain/                       # Domain Layer Tests
 │   └── entity/                   # Entity subdomain
-│       └── entity_test.go        # Domain entities (Base, Order, Orderitem)
+│       └── entity_test.go        # Domain entities (Base, Order, OrderItem)
 │
 ├── application/                  # Application Layer Tests
 │   ├── command/                  # Command subdomain

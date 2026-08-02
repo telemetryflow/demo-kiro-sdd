@@ -161,13 +161,13 @@ docker compose --profile app logs -f api
 
 ### Profiles
 
-| Profile      | Services                                                            |
-| ------------ | ------------------------------------------------------------------- |
-| `db`         | PostgreSQL                                                          |
-| `app`        | API (Order Service)                                                 |
-| `monitoring` | TFO-Collector, Prometheus, Alertmanager, Grafana, Jaeger, Loki      |
-| `platform`   | TFO-Backend, TFO-Viz, PostgreSQL, ClickHouse, Valkey, NATS          |
-| `all`        | All services                                                        |
+| Profile      | Services                                                       |
+| ------------ | -------------------------------------------------------------- |
+| `db`         | PostgreSQL                                                     |
+| `app`        | API (Order Service)                                            |
+| `monitoring` | TFO-Collector, Prometheus, Alertmanager, Grafana, Jaeger, Loki |
+| `platform`   | TFO-Backend, TFO-Viz, PostgreSQL, ClickHouse, Valkey, NATS     |
+| `all`        | All services                                                   |
 
 ```bash
 # Start platform services for end-to-end observability
@@ -232,16 +232,16 @@ POST http://localhost:4318/v1/logs
 
 All services run on a custom Docker network `order_service_net` with subnet `172.152.0.0/16`:
 
-| Service        | IP Address     |
-| -------------- | -------------- |
-| API            | 172.152.152.10 |
-| PostgreSQL     | 172.152.152.20 |
-| TFO Collector  | 172.152.152.30 |
-| Prometheus     | 172.152.152.50 |
-| Alertmanager   | 172.152.152.55 |
-| Loki           | 172.152.152.60 |
-| Jaeger         | 172.152.152.65 |
-| Grafana        | 172.152.152.70 |
+| Service       | IP Address     |
+| ------------- | -------------- |
+| API           | 172.152.152.10 |
+| PostgreSQL    | 172.152.152.20 |
+| TFO Collector | 172.152.152.30 |
+| Prometheus    | 172.152.152.50 |
+| Alertmanager  | 172.152.152.55 |
+| Loki          | 172.152.152.60 |
+| Jaeger        | 172.152.152.65 |
+| Grafana       | 172.152.152.70 |
 
 ## Development
 
@@ -289,20 +289,20 @@ This generates:
 
 ### API Endpoints
 
-| Method | Endpoint                                       | Description                          |
-| ------ | ---------------------------------------------- | ------------------------------------ |
-| GET    | `/health`                                      | Health check                         |
-| POST   | `/api/v1/auth/token`                           | Generate JWT access token (public)   |
-| GET    | `/api/v1/orders`                               | List all orders                      |
-| POST   | `/api/v1/orders`                               | Create order                         |
-| GET    | `/api/v1/orders/:id`                           | Get order by ID                      |
-| PUT    | `/api/v1/orders/:id`                           | Update order                         |
-| DELETE | `/api/v1/orders/:id`                           | Delete order                         |
-| GET    | `/api/v1/orders/:order_id/items`               | List items in an order               |
-| POST   | `/api/v1/orders/:order_id/items`               | Add an item to an order              |
-| GET    | `/api/v1/orders/:order_id/items/:id`           | Get an item within an order          |
-| PUT    | `/api/v1/orders/:order_id/items/:id`           | Update an item within an order       |
-| DELETE | `/api/v1/orders/:order_id/items/:id`           | Remove an item from an order         |
+| Method | Endpoint                             | Description                        |
+| ------ | ------------------------------------ | ---------------------------------- |
+| GET    | `/health`                            | Health check                       |
+| POST   | `/api/v1/auth/token`                 | Generate JWT access token (public) |
+| GET    | `/api/v1/orders`                     | List all orders                    |
+| POST   | `/api/v1/orders`                     | Create order                       |
+| GET    | `/api/v1/orders/:id`                 | Get order by ID                    |
+| PUT    | `/api/v1/orders/:id`                 | Update order                       |
+| DELETE | `/api/v1/orders/:id`                 | Delete order                       |
+| GET    | `/api/v1/orders/:order_id/items`     | List items in an order             |
+| POST   | `/api/v1/orders/:order_id/items`     | Add an item to an order            |
+| GET    | `/api/v1/orders/:order_id/items/:id` | Get an item within an order        |
+| PUT    | `/api/v1/orders/:order_id/items/:id` | Update an item within an order     |
+| DELETE | `/api/v1/orders/:order_id/items/:id` | Remove an item from an order       |
 
 ## Configuration
 
@@ -355,22 +355,22 @@ Configuration is loaded from environment variables and `.env` file.
 
 Image versions and container settings are defined in `.env` (see `.env.example` for the full list). Highlights:
 
-| Variable              | Description                  | Default                  |
-| --------------------- | ---------------------------- | ------------------------ |
-| `POSTGRES_VERSION`    | PostgreSQL image version     | `18-alpine`              |
-| `PROMETHEUS_VERSION`  | Prometheus image version     | `v3.13.2`                |
-| `ALERTMANAGER_VERSION`| Alertmanager image version   | `v0.33.1`                |
-| `GRAFANA_VERSION`     | Grafana image version        | `13.1.1`                 |
-| `LOKI_VERSION`        | Loki image version           | `3.7.4`                  |
-| `JAEGER_VERSION`      | Jaeger image version         | `1.76.0`                 |
-| `TFO_COLLECTOR_VERSION`| TFO Collector image version | `1.3.0`                  |
-| `VALKEY_VERSION`      | Valkey image version         | `8-alpine`               |
-| `PORT_GRAFANA`        | Grafana host port            | `3001`                   |
-| `PORT_JAEGER_UI`      | Jaeger UI host port          | `16686`                  |
-| `PORT_LOKI`           | Loki host port               | `3100`                   |
-| `PORT_OTEL_GRPC`      | Collector OTLP gRPC port     | `4317`                   |
-| `PORT_OTEL_HTTP`      | Collector OTLP HTTP port     | `4318`                   |
-| `PORT_OTEL_METRICS`   | Collector Prometheus port    | `8889`                   |
+| Variable                | Description                 | Default     |
+| ----------------------- | --------------------------- | ----------- |
+| `POSTGRES_VERSION`      | PostgreSQL image version    | `18-alpine` |
+| `PROMETHEUS_VERSION`    | Prometheus image version    | `v3.13.2`   |
+| `ALERTMANAGER_VERSION`  | Alertmanager image version  | `v0.33.1`   |
+| `GRAFANA_VERSION`       | Grafana image version       | `13.1.1`    |
+| `LOKI_VERSION`          | Loki image version          | `3.7.4`     |
+| `JAEGER_VERSION`        | Jaeger image version        | `1.76.0`    |
+| `TFO_COLLECTOR_VERSION` | TFO Collector image version | `1.3.0`     |
+| `VALKEY_VERSION`        | Valkey image version        | `8-alpine`  |
+| `PORT_GRAFANA`          | Grafana host port           | `3001`      |
+| `PORT_JAEGER_UI`        | Jaeger UI host port         | `16686`     |
+| `PORT_LOKI`             | Loki host port              | `3100`      |
+| `PORT_OTEL_GRPC`        | Collector OTLP gRPC port    | `4317`      |
+| `PORT_OTEL_HTTP`        | Collector OTLP HTTP port    | `4318`      |
+| `PORT_OTEL_METRICS`     | Collector Prometheus port   | `8889`      |
 
 ## Testing
 

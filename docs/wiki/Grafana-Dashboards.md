@@ -6,7 +6,7 @@ This document covers the Grafana dashboard provisioning, the unified monitoring 
 
 ## Overview
 
-The Order Service ships a **full observability stack** under the `monitoring` Docker Compose profile: Grafana + Prometheus + Jaeger + Loki, fed by the TFO-Collector. Three datasources are auto-provisioned and wired for cross-signal correlation so a single dashboard can answer *is it healthy?*, *where is the bottleneck?*, and *what do the logs say?* — all linked by `trace_id`.
+The Order Service ships a **full observability stack** under the `monitoring` Docker Compose profile: Grafana + Prometheus + Jaeger + Loki, fed by the TFO-Collector. Three datasources are auto-provisioned and wired for cross-signal correlation so a single dashboard can answer _is it healthy?_, _where is the bottleneck?_, and _what do the logs say?_ — all linked by `trace_id`.
 
 ### Unified correlation dashboard
 
@@ -55,13 +55,13 @@ flowchart LR
 docker compose --profile monitoring up -d
 ```
 
-| Service     | URL                       | Purpose                                  |
-| ----------- | ------------------------- | ---------------------------------------- |
-| Grafana     | http://localhost:3001     | Dashboards (admin / admin)               |
-| Prometheus  | http://localhost:9090     | Metrics + span_metrics exemplars         |
-| Jaeger UI   | http://localhost:16686    | Distributed traces                       |
-| Loki        | http://localhost:3100     | Log aggregation (OTLP native)            |
-| Alertmanager| http://localhost:9093     | Alert routing                            |
+| Service      | URL                    | Purpose                          |
+| ------------ | ---------------------- | -------------------------------- |
+| Grafana      | http://localhost:3001  | Dashboards (admin / admin)       |
+| Prometheus   | http://localhost:9090  | Metrics + span_metrics exemplars |
+| Jaeger UI    | http://localhost:16686 | Distributed traces               |
+| Loki         | http://localhost:3100  | Log aggregation (OTLP native)    |
+| Alertmanager | http://localhost:9093  | Alert routing                    |
 
 Datasources (Prometheus, Jaeger, Loki) and the dashboards are **auto-provisioned** on first boot from `configs/grafana/provisioning/`. No manual import is required.
 
@@ -69,13 +69,13 @@ Datasources (Prometheus, Jaeger, Loki) and the dashboards are **auto-provisioned
 
 The TFO-Collector (`configs/otel/tfo-collector.yaml`) fans each signal out to multiple backends:
 
-| Pipeline               | Exporters                                                |
-| ---------------------- | -------------------------------------------------------- |
-| `traces`               | `tfo` (platform), `otlphttp/jaeger`, span_metrics, service_graph |
-| `metrics`              | `tfo`, `prometheus` (scraped at `:8889`)                 |
-| `metrics/span_metrics` | `tfo`, `prometheus` (with **exemplars**)                 |
-| `metrics/service_graph`| `tfo`, `prometheus`                                      |
-| `logs`                 | `tfo` (platform), `otlphttp/loki`                        |
+| Pipeline                | Exporters                                                        |
+| ----------------------- | ---------------------------------------------------------------- |
+| `traces`                | `tfo` (platform), `otlphttp/jaeger`, span_metrics, service_graph |
+| `metrics`               | `tfo`, `prometheus` (scraped at `:8889`)                         |
+| `metrics/span_metrics`  | `tfo`, `prometheus` (with **exemplars**)                         |
+| `metrics/service_graph` | `tfo`, `prometheus`                                              |
+| `logs`                  | `tfo` (platform), `otlphttp/loki`                                |
 
 The `prometheus` exporter on port `8889` is the bridge that exposes span_metrics/service_graph histograms **with exemplars** for Prometheus to scrape — this is what makes metrics → traces drill-down work.
 
@@ -91,10 +91,10 @@ A focused single-panel board showing P95 latency per route with exemplar overlay
 
 ## Dashboard variables (unified board)
 
-| Variable      | Type  | Source                                                                  |
-| ------------- | ----- | ----------------------------------------------------------------------- |
-| `service_name`| Query | `label_values(traces_calls_total, service_name)`           |
-| `http_route`  | Query | `label_values(traces_calls_total{service_name=...}, http_route)` (multi-select + All) |
+| Variable       | Type  | Source                                                                                |
+| -------------- | ----- | ------------------------------------------------------------------------------------- |
+| `service_name` | Query | `label_values(traces_calls_total, service_name)`                                      |
+| `http_route`   | Query | `label_values(traces_calls_total{service_name=...}, http_route)` (multi-select + All) |
 
 ---
 
@@ -159,4 +159,3 @@ The Jaeger datasource can be swapped for **Tempo** by changing the datasource `t
 - [Observability](Observability.md) — Telemetry pipeline and exemplar flow
 - [Alerting](Alerting.md) — Alert rules that correspond to dashboard thresholds
 - [Docker Compose](Docker-Compose.md) — Service deployment including the monitoring profile
-

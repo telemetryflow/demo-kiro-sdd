@@ -102,11 +102,11 @@ go test -v -run "TestProperty\|TestCardinality\|TestRecording\|TestAbsent" ./tes
 go test -v -rapid.checks=500 ./tests/unit/observability/...
 ```
 
-| Test | What It Verifies | Min Iterations |
-|------|------------------|----------------|
-| Cardinality test | No metric label contains UUID, trace_id, or email | 100 |
-| Recording rule test | Output labels exclude `le` bucket label | 100 |
-| Alert rule test | Absent metric produces no alert | 100 |
+| Test                | What It Verifies                                  | Min Iterations |
+| ------------------- | ------------------------------------------------- | -------------- |
+| Cardinality test    | No metric label contains UUID, trace_id, or email | 100            |
+| Recording rule test | Output labels exclude `le` bucket label           | 100            |
+| Alert rule test     | Absent metric produces no alert                   | 100            |
 
 ---
 
@@ -255,13 +255,13 @@ open coverage.html
 
 ### Coverage Files
 
-| File | Description |
-|------|-------------|
-| `coverage-unit.out` | Unit test coverage data |
-| `coverage-integration.out` | Integration test coverage data |
-| `coverage-merged.out` | Combined coverage |
-| `coverage.html` | Visual HTML report |
-| `coverage-summary.txt` | Text summary with per-function breakdown |
+| File                       | Description                              |
+| -------------------------- | ---------------------------------------- |
+| `coverage-unit.out`        | Unit test coverage data                  |
+| `coverage-integration.out` | Integration test coverage data           |
+| `coverage-merged.out`      | Combined coverage                        |
+| `coverage.html`            | Visual HTML report                       |
+| `coverage-summary.txt`     | Text summary with per-function breakdown |
 
 ---
 
@@ -287,14 +287,14 @@ benchstat old.txt new.txt
 
 ### Environment Variables for Tests
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `DB_HOST` | `localhost` | Database host for integration tests |
-| `DB_PORT` | `5432` | Database port |
-| `DB_USER` | `postgres` | Database user |
-| `DB_PASSWORD` | `postgres` | Database password |
-| `DB_NAME` | `orders_test` | Test database name |
-| `DB_SSL_MODE` | `disable` | TLS mode |
+| Variable      | Default       | Purpose                             |
+| ------------- | ------------- | ----------------------------------- |
+| `DB_HOST`     | `localhost`   | Database host for integration tests |
+| `DB_PORT`     | `5432`        | Database port                       |
+| `DB_USER`     | `postgres`    | Database user                       |
+| `DB_PASSWORD` | `postgres`    | Database password                   |
+| `DB_NAME`     | `orders_test` | Test database name                  |
+| `DB_SSL_MODE` | `disable`     | TLS mode                            |
 
 ### Test Tags
 
@@ -428,29 +428,29 @@ flowchart LR
 
 ### Trigger Conditions
 
-| Event | Branches | Tests Run |
-|-------|----------|-----------|
-| Push | main, develop, feature/*, release/* | Lint + Unit + Integration + Build + Security |
-| PR | main, develop | Lint + Unit + Integration + Build + Security |
-| Push to main | main | All of the above + E2E |
-| Manual dispatch | any | Configurable (can enable E2E, skip lint) |
+| Event           | Branches                            | Tests Run                                    |
+| --------------- | ----------------------------------- | -------------------------------------------- |
+| Push            | main, develop, feature/_, release/_ | Lint + Unit + Integration + Build + Security |
+| PR              | main, develop                       | Lint + Unit + Integration + Build + Security |
+| Push to main    | main                                | All of the above + E2E                       |
+| Manual dispatch | any                                 | Configurable (can enable E2E, skip lint)     |
 
 ---
 
 ## Summary of Make Targets
 
-| Command | What It Does | Speed |
-|---------|-------------|-------|
-| `make test` | Unit + Integration | ~3 min |
-| `make test-unit` | Unit tests only | ~30s |
-| `make test-integration` | Integration tests | ~2-5 min |
-| `make test-e2e` | End-to-end tests | ~5-15 min |
-| `make test-all` | Unit + Integration + E2E | ~10-20 min |
-| `make test-short` | Skip long-running tests | ~1 min |
-| `make test-coverage` | Generate HTML coverage | ~30s |
-| `make bench` | Run benchmarks | ~1-2 min |
-| `make check` | fmt + vet + lint + test | ~5 min |
-| `make ci` | Full CI pipeline | ~5 min |
+| Command                 | What It Does             | Speed      |
+| ----------------------- | ------------------------ | ---------- |
+| `make test`             | Unit + Integration       | ~3 min     |
+| `make test-unit`        | Unit tests only          | ~30s       |
+| `make test-integration` | Integration tests        | ~2-5 min   |
+| `make test-e2e`         | End-to-end tests         | ~5-15 min  |
+| `make test-all`         | Unit + Integration + E2E | ~10-20 min |
+| `make test-short`       | Skip long-running tests  | ~1 min     |
+| `make test-coverage`    | Generate HTML coverage   | ~30s       |
+| `make bench`            | Run benchmarks           | ~1-2 min   |
+| `make check`            | fmt + vet + lint + test  | ~5 min     |
+| `make ci`               | Full CI pipeline         | ~5 min     |
 
 ---
 

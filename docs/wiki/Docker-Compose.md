@@ -44,13 +44,13 @@ graph TB
     end
 ```
 
-| Profile      | Services                                                   | Use Case                                                 |
-| ------------ | ---------------------------------------------------------- | -------------------------------------------------------- |
-| `db`         | PostgreSQL                                                 | Database-only for migrations or external app development |
-| `app`        | API + PostgreSQL + TFO Collector                           | Application development with telemetry export            |
-| `monitoring` | TFO Collector + Prometheus + Alertmanager                  | Observability stack (no application)                     |
+| Profile      | Services                                                    | Use Case                                                 |
+| ------------ | ----------------------------------------------------------- | -------------------------------------------------------- |
+| `db`         | PostgreSQL                                                  | Database-only for migrations or external app development |
+| `app`        | API + PostgreSQL + TFO Collector                            | Application development with telemetry export            |
+| `monitoring` | TFO Collector + Prometheus + Alertmanager                   | Observability stack (no application)                     |
 | `platform`   | TFO Backend + Viz + ClickHouse + Valkey + NATS + PostgreSQL | Full TFO Platform                                        |
-| `all`        | Everything above combined                                  | Complete local environment                               |
+| `all`        | Everything above combined                                   | Complete local environment                               |
 
 ### Usage
 
@@ -85,7 +85,7 @@ docker compose --profile all down
 
 | Service    | Image                | Port(s) | Static IP      | Profiles     |
 | ---------- | -------------------- | ------- | -------------- | ------------ |
-| `postgres`            | `postgres:18-alpine`                         | 5432    | 172.152.152.20 | db, app, all |
+| `postgres` | `postgres:18-alpine` | 5432    | 172.152.152.20 | db, app, all |
 | `api`      | Custom (Dockerfile)  | 8080    | 172.152.152.10 | app, all     |
 
 ### Monitoring Services
@@ -166,7 +166,7 @@ Static IP assignments enable deterministic DNS-free service discovery within the
 | `prometheus`          | `vol_prometheus_data` (named)              | Metrics TSDB        |
 | `tfo-demo-postgres`   | `${VOLUMES_BASE_PATH}/tfo-demo/postgresql` | Platform database   |
 | `tfo-demo-clickhouse` | `${VOLUMES_BASE_PATH}/tfo-demo/clickhouse` | Time-series storage |
-| `tfo-demo-valkey`     | `${VOLUMES_BASE_PATH}/tfo-demo/valkey`      | Cache + queues      |
+| `tfo-demo-valkey`     | `${VOLUMES_BASE_PATH}/tfo-demo/valkey`     | Cache + queues      |
 | `tfo-demo-nats`       | `${VOLUMES_BASE_PATH}/tfo-demo/nats`       | Message store       |
 
 ---

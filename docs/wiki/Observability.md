@@ -107,8 +107,8 @@ The response should include exemplar objects with a `trace_id` label (32-charact
 
 | Metric Name                                  | Type                   | Unit | Labels                                          | Source                    |
 | -------------------------------------------- | ---------------------- | ---- | ----------------------------------------------- | ------------------------- |
-| `traces_duration_milliseconds`  | Histogram              | ms   | `http_method`, `http_route`, `http_status_code` | span_metrics connector    |
-| `traces_calls_total`            | Counter                | —    | `http_method`, `http_route`, `http_status_code` | span_metrics connector    |
+| `traces_duration_milliseconds`               | Histogram              | ms   | `http_method`, `http_route`, `http_status_code` | span_metrics connector    |
+| `traces_calls_total`                         | Counter                | —    | `http_method`, `http_route`, `http_status_code` | span_metrics connector    |
 | `order_service:http_request_duration_p95:5m` | Gauge (recording rule) | ms   | `http_method`, `http_route`                     | Prometheus recording rule |
 
 ### Histogram Bucket Bounds
