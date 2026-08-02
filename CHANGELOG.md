@@ -52,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Spanmetric Name Mismatch**: The spanmetrics connector (v0.152.0) emits `traces_calls_total` / `traces_duration_milliseconds_bucket` (no `span_metrics` infix); updated all Grafana dashboards, the Prometheus recording rule, datasource links, docs, and tests from the obsolete `traces_span_metrics_*` names
 - **Port Collision (API vs TFO-Viz)**: Both the API and `tfo-viz` defaulted to host port 8080; moved `PORT_FRONTEND` to 8088
 - **Duplicate Container Name**: `CONTAINER_TFO_POSTGRES` was set to the same name as the app postgres; gave the platform postgres a distinct container name
+- **Protected API Routes Never Registered**: The `v1Protected` group in `router.go` was a stub (`// Add protected routes here`), so `/api/v1/orders` and `/api/v1/order-items` returned 404 despite being documented in the OpenAPI spec. Wired the `OrderHandler` and `OrderitemHandler` (with their command/query handlers and GORM repositories) into the protected group — full CRUD now works behind JWT auth
+- **Migration/Entity Schema Drift**: Migration `000003` created table `orderitems` but the `Orderitem` entity maps to `order_items`; both `orders` and `order_items` migrations were missing the `deleted_at` column that GORM soft-delete expects. Corrected the up/down SQL to match the entities
 
 ### Changed
 

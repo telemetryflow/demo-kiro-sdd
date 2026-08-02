@@ -25,8 +25,10 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
+	apphandler "github.com/telemetryflow/order-service/internal/application/handler"
 	"github.com/telemetryflow/order-service/internal/infrastructure/http/handler"
 	"github.com/telemetryflow/order-service/internal/infrastructure/http/middleware"
+	"github.com/telemetryflow/order-service/internal/infrastructure/persistence"
 )
 
 // setupRoutes configures all routes
@@ -70,10 +72,22 @@ func (s *Server) setupRoutes() {
 	// API v1 routes — protected (JWT required)
 	v1Protected := e.Group("/api/v1")
 	v1Protected.Use(middleware.Auth(s.config.JWT))
-	{
-		// Add protected routes here
-		_ = v1Protected
-	}
+
+	// Orders (CRUD)
+	orderRepo := persistence.NewOrderRepository(s.db)
+	orderHandler := handler.NewOrderHandler(
+		apphandler.NewOrderCommandHandler(orderRepo),
+		apphandler.NewOrderQueryHandler(orderRepo),
+	)
+	orderHandler.RegisterRoutes(v1Protected)
+
+	// Order Items (CRUD)
+	orderitemRepo := persistence.NewOrderitemRepository(s.db)
+	orderitemHandler := handler.NewOrderitemHandler(
+		apphandler.NewOrderitemCommandHandler(orderitemRepo),
+		apphandler.NewOrderitemQueryHandler(orderitemRepo),
+	)
+	orderitemHandler.RegisterRoutes(v1Protected)
 
 }
 

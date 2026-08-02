@@ -3,13 +3,14 @@
 -- Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 
 -- Drop trigger
-DROP TRIGGER IF EXISTS update_orderitems_updated_at ON orderitems;
+DROP TRIGGER IF EXISTS update_order_items_updated_at ON order_items;
 
 -- Drop indexes
-DROP INDEX IF EXISTS idx_orderitems_created_at;
-DROP INDEX IF EXISTS idx_orderitems_order_id;
-DROP INDEX IF EXISTS idx_orderitems_product_id;
+DROP INDEX IF EXISTS idx_order_items_created_at;
+DROP INDEX IF EXISTS idx_order_items_order_id;
+DROP INDEX IF EXISTS idx_order_items_product_id;
+DROP INDEX IF EXISTS idx_order_items_deleted_at;
 
 
 -- Drop table
-DROP TABLE IF EXISTS orderitems;
+DROP TABLE IF EXISTS order_items;
