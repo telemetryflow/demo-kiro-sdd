@@ -28,17 +28,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.4] - 2026-07-29
+## [1.4.4] - 2026-08-02
 
 ### Added
 
 - **Request Validator**: Registered Echo validator on server instance, enabling struct validation on all request handlers
 - **Auth Token Endpoint**: Public `POST /api/v1/auth/token` endpoint with auto-generated `user_id` (UUID) — only `email` and `role` required in request body
+- **Unified Observability Stack**: Added Grafana, Jaeger, and Loki services under the `monitoring` profile, providing a full metrics + logs + traces visualization layer alongside the TFO Platform
+- **Unified Correlation Dashboard**: New Grafana dashboard `order_service_overview` correlating metrics (Prometheus exemplars), traces (Jaeger), and logs (Loki `traceId`) on a single view — RED health stats, p50/p95/p99 latency, top slow spans, service dependency graph, and live correlated logs
+- **Grafana Provisioning**: Auto-provisioned datasources (Prometheus, Jaeger, Loki) with cross-signal correlation links (`exemplarTraceIdDestinations`, `tracesToLogsV2`, Loki `derivedFields`) and a dashboard provider
+- **Loki OTLP Ingestion**: Loki config with TSDB schema, structured metadata, and OTLP resource attributes promoted to stream labels via `distributor.otlp_config` for `service_name` filtering
+- **Collector Fan-out**: TFO-Collector now exports traces → Jaeger, logs → Loki (OTLP native), and span_metrics/service_graph → a Prometheus exporter on `:8889` with exemplars
 
 ### Fixed
 
 - **Router Middleware Bleed**: Fixed auth middleware being applied to public routes due to Echo sub-group with empty prefix. Split into independent `v1Public` and `v1Protected` groups
 - **Lint Issues**: Resolved all linter warnings (errcheck, staticcheck SA4012, ineffassign) across observability test files
+- **Loki Config Parse Error**: Removed invalid `limits_config.otlp_resource_attributes` (rejected by Loki 3.7.x); moved resource-attribute label promotion to the valid `distributor.otlp_config.default_resource_attributes_as_index_labels` field
+- **Jaeger Badger Permissions**: `mkdir /badger/key: permission denied` (named volume owned by root, container runs non-root) — switched span storage to in-memory for the demo stack
+- **PostgreSQL Major-Version Incompatibility**: PG 18 cannot read a data directory initialized by PG 16; documented the upgrade requirement and wiped the stale dev data directory so PG 18 initializes fresh
 
 ### Changed
 
@@ -47,7 +55,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Postman Collection**: Replaced legacy "Login" request with "Generate Token" pointing to correct endpoint
 - **Postman Environment**: Replaced `testUserEmail`/`testUserPassword` with `tokenEmail`/`tokenRole` variables
 - **Docker Compose Docs**: Added rebuild command (`--build api`) to wiki and README
-- **Version**: Updated from 1.4.0 to 1.4.4
+- **Cache Store**: Replaced Redis with Valkey (`valkey/valkey:8-alpine`), a Redis-compatible drop-in. Service renamed `tfo-demo-redis` → `tfo-demo-valkey`; the `tfo-backend` image still receives `REDIS_*` env-var keys (app contract) sourced from `VALKEY_*` values
+- **Container Versions**: Bumped all third-party images to current latest
+  - postgres `16-alpine` → `18-alpine`
+  - prometheus `v3.4.0` → `v3.13.2`
+  - alertmanager `v0.28.1` → `v0.33.1` (externalized to `ALERTMANAGER_VERSION`)
+  - loki `3.3.2` → `3.7.4`
+  - jaeger `1.62.0` → `1.76.0`
+  - grafana `11.4.0` → `13.1.1`
+  - clickhouse `24.12-alpine` → `26.7-alpine`
+  - nats `2-alpine` → `2.14-alpine`
+- **Prometheus Scrape**: Fixed scrape targets to use the `tfo-collector` DNS name (previously referenced the non-existent `otel-collector` host) and documented the exemplar bridge
+- **Documentation**: Rewrote Grafana-Dashboards wiki for the unified stack; updated Architecture, Docker-Compose, Getting-Started, Observability, Home, DFD, and README to reflect Valkey and the new services/versions
 
 ---
 
