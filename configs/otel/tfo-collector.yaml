@@ -282,7 +282,7 @@ exporters:
 
   # Jaeger (OTLP native) - traces backend for Grafana correlation
   # Jaeger all-in-one accepts OTLP/HTTP on port 4318 inside the compose network.
-  otlphttp/jaeger:
+  otlp_http/jaeger:
     endpoint: "http://jaeger:4318"
     tls:
       insecure: true
@@ -291,7 +291,7 @@ exporters:
   # Native OTLP ingestion preserves traceId as structured metadata so Grafana can
   # link a log line straight to the trace it belongs to. The exporter appends
   # /v1/logs to the endpoint, producing http://loki:3100/otlp/v1/logs.
-  otlphttp/loki:
+  otlp_http/loki:
     endpoint: "http://loki:3100/otlp"
     tls:
       insecure: true
@@ -336,7 +336,7 @@ service:
     traces:
       receivers: [tfootlp]
       processors: [memory_limiter, resourcedetection, resource, attributes/agent, batch]
-      exporters: [debug, tfo, otlphttp/jaeger, span_metrics, service_graph]
+      exporters: [debug, tfo, otlp_http/jaeger, span_metrics, service_graph]
 
     # Metrics pipeline - receives ALL TFO-Agent collector metrics.
     # Covers all 16 collectors: k8s-nodes, k8s-pods, k8s-deployments, k8s-workloads,
@@ -375,7 +375,7 @@ service:
         - resource
         - attributes/agent
         - batch
-      exporters: [debug, tfo, otlphttp/loki]
+      exporters: [debug, tfo, otlp_http/loki]
 
   # Internal telemetry configuration
   telemetry:

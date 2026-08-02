@@ -6,17 +6,17 @@ Welcome to the **Order Service** technical documentation. This wiki provides com
 
 ## Quick Navigation
 
-| Section                                     | Description                                                         |
-| ------------------------------------------- | ------------------------------------------------------------------- |
-| [Getting Started](Getting-Started.md)       | Prerequisites, setup, and running the service locally               |
-| [Architecture](Architecture.md)             | System design, DDD layers, CQRS flow, and infrastructure topology   |
-| [Observability](Observability.md)           | Telemetry pipeline, metrics, traces, exemplars, and instrumentation |
-| [Alerting](Alerting.md)                     | Alert rules, Alertmanager configuration, and on-call runbooks       |
-| [Grafana Dashboards](Grafana-Dashboards.md) | Dashboard setup, P95 latency panels, and exemplar drill-down        |
-| [Docker Compose](Docker-Compose.md)         | Service deployment, profiles, networking, and environment variables  |
-| [Testing](Testing.md)                       | Test suite structure, conventions, and coverage strategy             |
-| [Running Tests](Running-Tests.md)           | Detailed test execution guide — unit, integration, E2E, CI          |
-| [Troubleshooting](Troubleshooting.md)       | Common issues, diagnostics, and resolution steps                    |
+| Section                                     | Description                                                                   |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
+| [Getting Started](Getting-Started.md)       | Prerequisites, setup, and running the service locally                         |
+| [Architecture](Architecture.md)             | System design, DDD layers, CQRS flow, and infrastructure topology             |
+| [Observability](Observability.md)           | Telemetry pipeline, metrics, traces, exemplars, and instrumentation           |
+| [Alerting](Alerting.md)                     | Alert rules, Alertmanager configuration, and on-call runbooks                 |
+| [Grafana Dashboards](Grafana-Dashboards.md) | Unified metrics + logs + traces correlation dashboard and exemplar drill-down |
+| [Docker Compose](Docker-Compose.md)         | Service deployment, profiles, networking, and environment variables           |
+| [Testing](Testing.md)                       | Test suite structure, conventions, and coverage strategy                      |
+| [Running Tests](Running-Tests.md)           | Detailed test execution guide — unit, integration, E2E, CI                    |
+| [Troubleshooting](Troubleshooting.md)       | Common issues, diagnostics, and resolution steps                              |
 
 ---
 
@@ -26,15 +26,15 @@ Welcome to the **Order Service** technical documentation. This wiki provides com
 
 ### Key Facts
 
-| Property          | Value                                                 |
-| ----------------- | ----------------------------------------------------- |
-| Language          | Go 1.26+                                              |
-| Framework         | Echo (HTTP) with otelecho auto-instrumentation        |
-| Database          | PostgreSQL 16                                         |
-| Telemetry         | OTLP gRPC → TFO Collector → Prometheus / TFO Platform |
-| Monitoring        | Prometheus + Alertmanager + Grafana                   |
-| Container Runtime | Docker Compose with profile-based deployment          |
-| License           | Apache 2.0                                            |
+| Property          | Value                                                                 |
+| ----------------- | --------------------------------------------------------------------- |
+| Language          | Go 1.26+                                                              |
+| Framework         | Echo (HTTP) with otelecho auto-instrumentation                        |
+| Database          | PostgreSQL 18                                                         |
+| Telemetry         | OTLP gRPC → TFO Collector → Prometheus / Jaeger / Loki / TFO Platform |
+| Monitoring        | Prometheus + Alertmanager + Grafana + Jaeger + Loki                   |
+| Container Runtime | Docker Compose with profile-based deployment                          |
+| License           | Apache 2.0                                                            |
 
 ### API Endpoints
 
@@ -70,7 +70,9 @@ order-service/
 │   ├── otel/                       TFO Collector configuration
 │   ├── prometheus/                 Prometheus config + recording/alerting rules
 │   ├── alertmanager/               Alertmanager routing configuration
-│   └── grafana/dashboards/         Grafana dashboard JSON provisioning
+│   ├── grafana/                    Dashboards + datasource/dashboard provisioning
+│   ├── loki/                       Loki OTLP ingestion + retention config
+│   └── jaeger/                     Jaeger sampling strategies
 ├── docs/
 │   ├── api/                        OpenAPI spec + Swagger JSON
 │   ├── diagrams/                   ERD, DFD (Mermaid)

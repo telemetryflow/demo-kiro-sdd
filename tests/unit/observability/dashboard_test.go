@@ -143,7 +143,7 @@ func TestDashboardDatasourceVariableTraces(t *testing.T) {
 func TestDashboardHTTPRouteTemplateVariable(t *testing.T) {
 	dashboard := loadDashboard(t)
 
-	expectedQuery := "label_values(traces_span_metrics_duration_milliseconds_bucket, http_route)"
+	expectedQuery := "label_values(traces_duration_milliseconds_bucket, http_route)"
 
 	found := false
 	for _, tmpl := range dashboard.Templating.List {

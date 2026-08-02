@@ -40,7 +40,7 @@ import (
 const (
 	collectorEndpoint     = "localhost:4317"
 	prometheusExemplarURL = "http://localhost:9090"
-	exemplarQuery         = `traces_span_metrics_duration_milliseconds_bucket{http_method="POST",http_route="/api/v1/orders"}`
+	exemplarQuery         = `traces_duration_milliseconds_bucket{http_method="POST",http_route="/api/v1/orders"}`
 )
 
 // hexTraceIDRegex matches a 32-character lowercase hex string (trace_id format).

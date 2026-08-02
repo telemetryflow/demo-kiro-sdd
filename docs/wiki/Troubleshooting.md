@@ -20,7 +20,7 @@ curl http://localhost:13133               # TFO Collector
 
 ### 1. No Metrics in Prometheus
 
-**Symptom:** Prometheus shows no data for `traces_span_metrics_duration_milliseconds`.
+**Symptom:** Prometheus shows no data for `traces_duration_milliseconds`.
 
 ```mermaid
 flowchart TB
@@ -89,7 +89,7 @@ curl -s http://localhost:8889/metrics | grep "# HELP traces_span_metrics"
 # Look for TYPE histogram (exemplars attach to histograms)
 
 # 4. Query exemplars API
-curl "http://localhost:9090/api/v1/query_exemplars?query=traces_span_metrics_duration_milliseconds_bucket&start=$(date -v-1H +%s)&end=$(date +%s)" | jq '.data | length'
+curl "http://localhost:9090/api/v1/query_exemplars?query=traces_duration_milliseconds_bucket&start=$(date -v-1H +%s)&end=$(date +%s)" | jq '.data | length'
 ```
 
 **Common causes:**

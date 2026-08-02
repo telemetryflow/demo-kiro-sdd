@@ -63,7 +63,8 @@ order-service/
 │   ├── otel/                     # TFO Collector pipeline config
 │   ├── prometheus/               # Prometheus scrape config + alerting rules
 │   ├── alertmanager/             # Alertmanager routing config
-│   ├── grafana/                  # Dashboard JSON models
+│   ├── grafana/                  # Dashboards + datasource/dashboard provisioning
+│   ├── loki/                     # Loki OTLP ingestion + retention config
 │   └── jaeger/                   # Sampling strategies
 ├── docs/                         # Documentation
 │   ├── api/                      # OpenAPI spec (openapi.yaml, swagger.json)
@@ -103,7 +104,7 @@ order-service/
 ### Prerequisites
 
 - Go 1.26+
-- PostgreSQL 16+
+- PostgreSQL 18+
 - Docker & Docker Compose (recommended)
 
 ### Setup
@@ -140,13 +141,13 @@ order-service/
 The easiest way to run the service with all dependencies:
 
 ```bash
-# Start all services (PostgreSQL + API + TFO Collector + Prometheus + Alertmanager)
+# Start all services (PostgreSQL + API + TFO Collector + Prometheus + Alertmanager + Grafana + Jaeger + Loki)
 docker compose --profile all up -d
 
 # Or use profiles for selective startup
 docker compose --profile db up -d         # Start only PostgreSQL
 docker compose --profile app up -d        # Start API + PostgreSQL + Collector
-docker compose --profile monitoring up -d # Start Collector + Prometheus + Alertmanager
+docker compose --profile monitoring up -d # Start Collector + Prometheus + Alertmanager + Grafana + Jaeger + Loki
 
 # Rebuild after code changes
 docker compose --profile app up -d --build api
@@ -160,13 +161,13 @@ docker compose --profile app logs -f api
 
 ### Profiles
 
-| Profile      | Services                                                  |
-| ------------ | --------------------------------------------------------- |
-| `db`         | PostgreSQL                                                |
-| `app`        | API (Order Service)                                       |
-| `monitoring` | TFO-Collector, Prometheus                                 |
-| `platform`   | TFO-Backend, TFO-Viz, PostgreSQL, ClickHouse, Valkey, NATS |
-| `all`        | All services                                              |
+| Profile      | Services                                                            |
+| ------------ | ------------------------------------------------------------------- |
+| `db`         | PostgreSQL                                                          |
+| `app`        | API (Order Service)                                                 |
+| `monitoring` | TFO-Collector, Prometheus, Alertmanager, Grafana, Jaeger, Loki      |
+| `platform`   | TFO-Backend, TFO-Viz, PostgreSQL, ClickHouse, Valkey, NATS          |
+| `all`        | All services                                                        |
 
 ```bash
 # Start platform services for end-to-end observability
@@ -185,8 +186,12 @@ docker compose --profile all up -d
 | ------------- | ----------------------- | ------------------------------------ | ------------------------------------------------- |
 | PostgreSQL    | `TFO-SDK-PostgreSQL`    | 5432                                 | Order database                                    |
 | API           | `TFO-SDK-Order-Service` | 8080                                 | RESTful API                                       |
-| TFO-Collector | `TFO-SDK-OTEL`          | 4317, 4318, 8889, 13133, 55679, 1777 | TelemetryFlow Collector (v1.2.1)                  |
-| Prometheus    | `TFO-SDK-Prometheus`    | 9090                                 | Metrics collection                                |
+| TFO-Collector | `TFO-SDK-OTEL`          | 4317, 4318, 8889, 13133, 55679, 1777 | TelemetryFlow Collector (v1.3.0)                  |
+| Prometheus    | `TFO-SDK-Prometheus`    | 9090                                 | Metrics collection + exemplars                    |
+| Alertmanager  | `TFO-SDK-Alertmanager`  | 9093                                 | Alert routing                                     |
+| Grafana       | `TFO-SDK-Grafana`       | 3001                                 | Dashboards (metrics + logs + traces correlation)  |
+| Jaeger        | `TFO-SDK-Jaeger`        | 16686                                | Distributed tracing UI                            |
+| Loki          | `TFO-SDK-Loki`          | 3100                                 | Log aggregation (OTLP native)                     |
 | TFO-Backend   | `TFO-Platform-Backend`  | 8081                                 | TelemetryFlow Platform API (platform profile)     |
 | TFO-Viz       | `TFO-Platform-Viz`      | 3000                                 | TelemetryFlow Visualization UI (platform profile) |
 
@@ -231,7 +236,12 @@ All services run on a custom Docker network `order_service_net` with subnet `172
 | -------------- | -------------- |
 | API            | 172.152.152.10 |
 | PostgreSQL     | 172.152.152.20 |
-| OTEL Collector | 172.152.152.30 |
+| TFO Collector  | 172.152.152.30 |
+| Prometheus     | 172.152.152.50 |
+| Alertmanager   | 172.152.152.55 |
+| Loki           | 172.152.152.60 |
+| Jaeger         | 172.152.152.65 |
+| Grafana        | 172.152.152.70 |
 
 ## Development
 
@@ -343,16 +353,24 @@ Configuration is loaded from environment variables and `.env` file.
 
 ### Docker Compose Configuration
 
-| Variable             | Description                  | Default                  |
-| -------------------- | ---------------------------- | ------------------------ |
-| `POSTGRES_VERSION`   | PostgreSQL image version     | `16-alpine`              |
-| `OTEL_VERSION`       | OTEL Collector image version | `latest`                 |
-| `CONTAINER_POSTGRES` | PostgreSQL container name    | `order_service_postgres` |
-| `CONTAINER_API`      | API container name           | `order_service_api`      |
-| `CONTAINER_OTEL`     | OTEL container name          | `order_service_otel`     |
-| `PORT_OTEL_GRPC`     | OTEL gRPC port               | `4317`                   |
-| `PORT_OTEL_HTTP`     | OTEL HTTP port               | `4318`                   |
-| `PORT_OTEL_METRICS`  | OTEL metrics port            | `8889`                   |
+Image versions and container settings are defined in `.env` (see `.env.example` for the full list). Highlights:
+
+| Variable              | Description                  | Default                  |
+| --------------------- | ---------------------------- | ------------------------ |
+| `POSTGRES_VERSION`    | PostgreSQL image version     | `18-alpine`              |
+| `PROMETHEUS_VERSION`  | Prometheus image version     | `v3.13.2`                |
+| `ALERTMANAGER_VERSION`| Alertmanager image version   | `v0.33.1`                |
+| `GRAFANA_VERSION`     | Grafana image version        | `13.1.1`                 |
+| `LOKI_VERSION`        | Loki image version           | `3.7.4`                  |
+| `JAEGER_VERSION`      | Jaeger image version         | `1.76.0`                 |
+| `TFO_COLLECTOR_VERSION`| TFO Collector image version | `1.3.0`                  |
+| `VALKEY_VERSION`      | Valkey image version         | `8-alpine`               |
+| `PORT_GRAFANA`        | Grafana host port            | `3001`                   |
+| `PORT_JAEGER_UI`      | Jaeger UI host port          | `16686`                  |
+| `PORT_LOKI`           | Loki host port               | `3100`                   |
+| `PORT_OTEL_GRPC`      | Collector OTLP gRPC port     | `4317`                   |
+| `PORT_OTEL_HTTP`      | Collector OTLP HTTP port     | `4318`                   |
+| `PORT_OTEL_METRICS`   | Collector Prometheus port    | `8889`                   |
 
 ## Testing
 
@@ -394,14 +412,26 @@ The service is instrumented with OpenTelemetry for:
 - **Metrics**: Application and runtime metrics
 - **Logs**: Structured logging
 
-The OpenTelemetry Collector receives telemetry data and exports to:
+The OpenTelemetry Collector receives telemetry data and fans each signal out to multiple backends:
 
 - TelemetryFlow Platform (via `platform` profile - TFO-Backend + TFO-Viz)
-- Prometheus (metrics)
+- Prometheus (metrics + span_metrics exemplars)
+- Jaeger (traces)
+- Loki (logs, OTLP native with `traceId` correlation)
+
+### Unified Grafana Dashboard
+
+Start the monitoring profile for a single dashboard correlating metrics, logs, and traces:
+
+```bash
+docker compose --profile monitoring up -d
+```
+
+Open Grafana at `http://localhost:3001` (admin / admin) → **Dashboards → Order Service → "Observability Overview"**. Datasources and the dashboard are auto-provisioned. Click a Prometheus exemplar dot to open its trace in Jaeger; click a log line's `traceId` to jump to the trace.
 
 ### Prometheus Metrics
 
-Access metrics at: `http://localhost:8889/metrics`
+Access metrics at: `http://localhost:8889/metrics` (collector) and `http://localhost:9090` (Prometheus UI).
 
 ### TelemetryFlow Platform
 

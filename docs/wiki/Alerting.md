@@ -44,7 +44,7 @@ groups:
       - record: order_service:http_request_duration_p95:5m
         expr: >
           histogram_quantile(0.95,
-            sum(rate(traces_span_metrics_duration_milliseconds_bucket[5m]))
+            sum(rate(traces_duration_milliseconds_bucket[5m]))
             by (le, http_method, http_route))
 
       - alert: HighP95Latency

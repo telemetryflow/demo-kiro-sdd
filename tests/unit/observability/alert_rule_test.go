@@ -32,7 +32,7 @@ import (
 // Property 3: Absent source metric produces no alert
 //
 // For any http_method and http_route label combination where the source histogram
-// traces_span_metrics_duration_milliseconds_bucket has zero samples in the rate window,
+// traces_duration_milliseconds_bucket has zero samples in the rate window,
 // the HighP95Latency alert SHALL remain inactive (not pending, not firing).
 //
 // **Validates: Requirements 2.5**
@@ -98,10 +98,10 @@ func TestProperty_AbsentSourceMetricProducesNoAlert(t *testing.T) {
 
 		// Simulate the PromQL evaluation chain for absent metrics:
 		//
-		// When traces_span_metrics_duration_milliseconds_bucket has zero samples
+		// When traces_duration_milliseconds_bucket has zero samples
 		// for this {http_method, http_route} combination:
 		//
-		// 1. rate(traces_span_metrics_duration_milliseconds_bucket{...}[5m]) = empty vector
+		// 1. rate(traces_duration_milliseconds_bucket{...}[5m]) = empty vector
 		//    (rate of zero samples over any window is an empty result, not zero)
 		//
 		// 2. sum(...) by (le, http_method, http_route) = empty vector

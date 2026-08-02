@@ -185,7 +185,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "traces_span_metrics_duration_milliseconds_bucket{http_route=\"$http_route\"}",
+          "expr": "traces_duration_milliseconds_bucket{http_route=\"$http_route\"}",
           "format": "time_series",
           "hide": true,
           "interval": "",
@@ -246,7 +246,7 @@
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(traces_span_metrics_duration_milliseconds_bucket, http_route)",
+        "definition": "label_values(traces_duration_milliseconds_bucket, http_route)",
         "hide": 0,
         "includeAll": false,
         "label": "HTTP Route",
@@ -254,7 +254,7 @@
         "name": "http_route",
         "options": [],
         "query": {
-          "query": "label_values(traces_span_metrics_duration_milliseconds_bucket, http_route)",
+          "query": "label_values(traces_duration_milliseconds_bucket, http_route)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,

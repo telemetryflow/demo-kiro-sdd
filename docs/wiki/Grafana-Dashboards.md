@@ -93,8 +93,8 @@ A focused single-panel board showing P95 latency per route with exemplar overlay
 
 | Variable      | Type  | Source                                                                  |
 | ------------- | ----- | ----------------------------------------------------------------------- |
-| `service_name`| Query | `label_values(traces_span_metrics_calls_total, service_name)`           |
-| `http_route`  | Query | `label_values(traces_span_metrics_calls_total{service_name=...}, http_route)` (multi-select + All) |
+| `service_name`| Query | `label_values(traces_calls_total, service_name)`           |
+| `http_route`  | Query | `label_values(traces_calls_total{service_name=...}, http_route)` (multi-select + All) |
 
 ---
 

@@ -47,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Loki Config Parse Error**: Removed invalid `limits_config.otlp_resource_attributes` (rejected by Loki 3.7.x); moved resource-attribute label promotion to the valid `distributor.otlp_config.default_resource_attributes_as_index_labels` field
 - **Jaeger Badger Permissions**: `mkdir /badger/key: permission denied` (named volume owned by root, container runs non-root) — switched span storage to in-memory for the demo stack
 - **PostgreSQL Major-Version Incompatibility**: PG 18 cannot read a data directory initialized by PG 16; documented the upgrade requirement and wiped the stale dev data directory so PG 18 initializes fresh
+- **Loki Healthcheck on Distroless Image**: The `grafana/loki` image has no shell/`wget`/`curl`, so the `CMD-SHELL` healthcheck could never succeed (permanently "unhealthy"). Removed the healthcheck and switched Grafana's Loki dependency to `service_started`
+- **Collector Exporter Type Names**: TFO Collector's OCB build registers the OTLP HTTP exporter as `otlp_http` (underscored), not the standard `otlphttp`; corrected the Jaeger and Loki exporter IDs
+- **Spanmetric Name Mismatch**: The spanmetrics connector (v0.152.0) emits `traces_calls_total` / `traces_duration_milliseconds_bucket` (no `span_metrics` infix); updated all Grafana dashboards, the Prometheus recording rule, datasource links, docs, and tests from the obsolete `traces_span_metrics_*` names
+- **Port Collision (API vs TFO-Viz)**: Both the API and `tfo-viz` defaulted to host port 8080; moved `PORT_FRONTEND` to 8088
+- **Duplicate Container Name**: `CONTAINER_TFO_POSTGRES` was set to the same name as the app postgres; gave the platform postgres a distinct container name
 
 ### Changed
 

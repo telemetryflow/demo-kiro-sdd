@@ -195,7 +195,7 @@ graph TB
 | TFO Viz           | `telemetryflow/telemetryflow-viz:1.4.4`       | 80                      | `platform`                 |
 | ClickHouse        | `clickhouse/clickhouse-server:26.7-alpine`    | 8123, 9000              | `platform`                 |
 | Valkey            | `valkey/valkey:8-alpine`                      | 6379                    | `platform`                 |
-| NATS              | `nats:2-alpine`                               | 4222, 8222              | `platform`                 |
+| NATS              | `nats:2.14-alpine`                            | 4222, 8222              | `platform`                 |
 
 ---
 

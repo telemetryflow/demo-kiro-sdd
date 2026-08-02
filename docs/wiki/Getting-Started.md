@@ -68,7 +68,7 @@ docker compose --profile db up -d
 # Application + telemetry collector
 docker compose --profile app up -d
 
-# Monitoring stack (Prometheus + Alertmanager)
+# Monitoring stack (Prometheus + Alertmanager + Grafana + Jaeger + Loki)
 docker compose --profile monitoring up -d
 
 # Full TFO Platform (backend, viz, infra)
@@ -156,7 +156,7 @@ graph TB
     end
 
     subgraph Config
-        CONF["configs/\n(collector, prometheus, alertmanager, grafana)"]
+        CONF["configs/\n(collector, prometheus, alertmanager, grafana, loki, jaeger)"]
     end
 
     subgraph Tests

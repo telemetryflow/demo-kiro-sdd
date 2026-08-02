@@ -6,18 +6,19 @@ This document describes the telemetry pipeline, instrumentation strategy, metric
 
 ## Overview
 
-The Order Service uses **OpenTelemetry** for distributed tracing and span-derived metrics. Telemetry flows through the TFO Collector, which derives histogram metrics with exemplars, enabling click-through from metric observations to the originating trace.
+The Order Service uses **OpenTelemetry** for distributed tracing, span-derived metrics, and structured logs. Telemetry flows through the TFO Collector, which fans each signal out to queryable OSS backends (Prometheus, Jaeger, Loki) and the TFO Platform. The Collector derives histogram metrics with exemplars and indexes logs with `traceId`, enabling end-to-end click-through from a metric sample → trace → log line in a single Grafana dashboard.
 
 ---
 
 ## Telemetry Signals
 
-| Signal        | Instrumentation                                           | Export Path                                    | Storage                             |
-| ------------- | --------------------------------------------------------- | ---------------------------------------------- | ----------------------------------- |
-| **Traces**    | `otelecho` middleware (auto)                              | App → OTLP gRPC → TFO Collector → TFO Platform | ClickHouse (30 days)                |
-| **Metrics**   | Span-derived histograms via `span_metrics` connector      | Collector → Prometheus scrape (:8889)          | Prometheus TSDB (90 days)           |
-| **Logs**      | Structured JSON (`LOG_FORMAT=json`)                       | App → OTLP → Collector → TFO Platform          | ClickHouse (30 days)                |
-| **Exemplars** | Attached to histogram buckets by `span_metrics` connector | Collector → Prometheus scrape                  | Prometheus circular buffer (7 days) |
+| Signal            | Instrumentation                                           | Export Path                                         | Storage                                |
+| ----------------- | --------------------------------------------------------- | --------------------------------------------------- | -------------------------------------- |
+| **Traces**        | `otelecho` middleware (auto)                              | App → OTLP gRPC → Collector → Jaeger + TFO Platform | Jaeger (Badger) + ClickHouse (30 days) |
+| **Metrics**       | Span-derived histograms via `span_metrics` connector      | Collector → Prometheus exporter (:8889) → scrape    | Prometheus TSDB (90 days)              |
+| **Logs**          | Structured JSON (`LOG_FORMAT=json`)                       | App → OTLP → Collector → Loki + TFO Platform        | Loki (7 days) + ClickHouse (30 days)   |
+| **Exemplars**     | Attached to histogram buckets by `span_metrics` connector | Collector → Prometheus scrape                       | Prometheus circular buffer (7 days)    |
+| **Service graph** | Derived from traces by `service_graph` connector          | Collector → Prometheus exporter (:8889) → scrape    | Prometheus TSDB                        |
 
 ---
 
@@ -35,23 +36,36 @@ flowchart LR
         SM["span_metrics connector\n(exemplars: enabled)"]
         SG["service_graph connector"]
         PEXP["Prometheus exporter\n:8889"]
-        TFO["TFO exporter\n→ TFO Platform"]
+        JEXP["otlphttp/jaeger"]
+        LEXP["otlphttp/loki"]
+        TFO["tfo exporter\n→ TFO Platform"]
     end
 
     subgraph Storage
         PROM["Prometheus\n:9090"]
+        JAEGER["Jaeger\n:16686"]
+        LOKI["Loki\n:3100"]
         CH["ClickHouse\n(TFO Platform)"]
     end
+
+    GRAFANA["Grafana :3001\n(metrics + logs + traces)"]
 
     API -->|"OTLP gRPC :4317"| RCV
     RCV --> PROC
     PROC --> SM
     PROC --> SG
+    PROC --> JEXP
+    PROC --> LEXP
     PROC --> TFO
     SM --> PEXP
     SG --> PEXP
     PEXP -->|"scrape /metrics"| PROM
+    JEXP --> JAEGER
+    LEXP --> LOKI
     TFO --> CH
+    PROM -. exemplar trace_id .-> GRAFANA
+    LOKI -. traceId .-> GRAFANA
+    JAEGER -. trace .-> GRAFANA
 ```
 
 ---
@@ -82,7 +96,7 @@ You can verify exemplars are flowing correctly:
 
 ```bash
 # Query Prometheus exemplars API
-curl "http://localhost:9090/api/v1/query_exemplars?query=traces_span_metrics_duration_milliseconds_bucket&start=$(date -v-1H +%s)&end=$(date +%s)" | jq '.data'
+curl "http://localhost:9090/api/v1/query_exemplars?query=traces_duration_milliseconds_bucket&start=$(date -v-1H +%s)&end=$(date +%s)" | jq '.data'
 ```
 
 The response should include exemplar objects with a `trace_id` label (32-character hex string).
@@ -93,8 +107,8 @@ The response should include exemplar objects with a `trace_id` label (32-charact
 
 | Metric Name                                  | Type                   | Unit | Labels                                          | Source                    |
 | -------------------------------------------- | ---------------------- | ---- | ----------------------------------------------- | ------------------------- |
-| `traces_span_metrics_duration_milliseconds`  | Histogram              | ms   | `http_method`, `http_route`, `http_status_code` | span_metrics connector    |
-| `traces_span_metrics_calls_total`            | Counter                | —    | `http_method`, `http_route`, `http_status_code` | span_metrics connector    |
+| `traces_duration_milliseconds`  | Histogram              | ms   | `http_method`, `http_route`, `http_status_code` | span_metrics connector    |
+| `traces_calls_total`            | Counter                | —    | `http_method`, `http_route`, `http_status_code` | span_metrics connector    |
 | `order_service:http_request_duration_p95:5m` | Gauge (recording rule) | ms   | `http_method`, `http_route`                     | Prometheus recording rule |
 
 ### Histogram Bucket Bounds
@@ -181,7 +195,7 @@ connectors:
 | ------------------------------- | ------------------------------------ | -------------------- |
 | `TELEMETRYFLOW_ENDPOINT`        | Collector gRPC endpoint              | `tfo-collector:4317` |
 | `TELEMETRYFLOW_SERVICE_NAME`    | Service name in traces               | `Order-Service`      |
-| `TELEMETRYFLOW_SERVICE_VERSION` | Service version in traces            | `1.4.0`              |
+| `TELEMETRYFLOW_SERVICE_VERSION` | Service version in traces            | `1.4.4`              |
 | `TELEMETRYFLOW_INSECURE`        | Disable TLS for collector connection | `true`               |
 | `TELEMETRYFLOW_API_KEY_ID`      | API key for v2 endpoints             | —                    |
 | `TELEMETRYFLOW_API_KEY_SECRET`  | API secret for v2 endpoints          | —                    |
@@ -194,7 +208,9 @@ connectors:
 | ---------- | --------- | -------------------------- |
 | Metrics    | 90 days   | Prometheus TSDB            |
 | Traces     | 30 days   | ClickHouse (TFO Platform)  |
+| Traces     | ephemeral | Jaeger (Badger, demo)      |
 | Logs       | 30 days   | ClickHouse (TFO Platform)  |
+| Logs       | 7 days    | Loki (filesystem)          |
 | Exemplars  | 7 days    | Prometheus circular buffer |
 | Audit logs | 365 days  | TFO Platform               |
 
@@ -214,5 +230,5 @@ Target: **< 3% p95 latency overhead** from telemetry instrumentation. The `otele
 
 - [Architecture](Architecture.md) — System design and infrastructure topology
 - [Alerting](Alerting.md) — Alert rules and Alertmanager configuration
-- [Grafana Dashboards](Grafana-Dashboards.md) — P95 panels with exemplar drill-down
+- [Grafana Dashboards](Grafana-Dashboards.md) — Unified metrics + logs + traces correlation dashboard
 - [Troubleshooting](Troubleshooting.md) — Diagnosing telemetry issues

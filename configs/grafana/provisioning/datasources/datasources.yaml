@@ -52,10 +52,10 @@ datasources:
             metricsTag: service_name
         queries:
           - name: Request rate
-            query: 'sum(rate(traces_span_metrics_calls_total{service_name="$${__field.labels.service_name}"}[5m]))'
+            query: 'sum(rate(traces_calls_total{service_name="$${__field.labels.service_name}"}[5m]))'
             step: 15s
           - name: Error rate
-            query: 'sum(rate(traces_span_metrics_calls_total{service_name="$${__field.labels.service_name}",status_code="STATUS_CODE_ERROR"}[5m]))'
+            query: 'sum(rate(traces_calls_total{service_name="$${__field.labels.service_name}",status_code="STATUS_CODE_ERROR"}[5m]))'
             step: 15s
       # Trace → Logs correlation: jump from a trace into Loki filtered by traceId
       tracesToLogsV2:
